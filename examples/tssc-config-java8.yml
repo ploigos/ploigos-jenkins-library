@@ -1,0 +1,61 @@
+tssc-config:
+  global-defaults:
+    service-name: backend
+    application-name: ref-app-quarkus
+    organization: tssc-team
+  global-environment-defaults:
+    DEV:
+      kube-app-domain: apps.tssc.rht-set.com
+      argocd-api: argocd-server-argocd.apps.tssc.rht-set.com
+  generate-metadata:
+  - implementer: Maven
+  - implementer: Git
+  - implementer: SemanticVersion
+  tag-source:
+  - implementer: Git
+    config: {
+    }
+  unit-test:
+  - implementer: Maven
+    config: {
+    }
+  package:
+  - implementer: Maven
+    config: {
+    }
+  static-code-analysis:
+  - implementer: SonarQube
+    config:
+      url: https://sonarqube-sonarqube.apps.tssc.rht-set.com/
+  push-artifacts:
+  - implementer: Maven
+    config:
+      url: http://artifactory.apps.tssc.rht-set.com/artifactory/tssc/
+  create-container-image:
+  - implementer: Buildah
+    config:
+      destination: localhost/tssc-reference-app-quarkus-rest-json
+  push-container-image:
+  - implementer: Skopeo
+    config:
+      source: docker-archive:backend.tar
+      destination-url: quay-quay-enterprise.apps.tssc.rht-set.com
+  push-artifacts:
+  - implementer: Maven
+    config:
+      url: http://artifactory.apps.tssc.rht-set.com/artifactory/tssc/
+  deploy:
+  - implementer: ArgoCD
+    config:
+      git-email: 'napsspo+tssc@redhat.com'
+      helm-config-repo: http://gitea.gitea.svc.cluster.local:3000/tssc-references/tssc-reference-app-quarkus-rest-json-config.git
+      num-replicas: 1
+      ingress-enabled: true
+      readiness-probe-path: /fruits
+      liveness-probe-path: /fruits
+      destination-url: docker://quay-quay-enterprise.apps.tssc.rht-set.com
+  validate-environment-configuration:
+  - implementer: ConfiglintFromArgocd
+  - implementer: Configlint
+    config:
+      rules: cicd/ValidateEnv/
