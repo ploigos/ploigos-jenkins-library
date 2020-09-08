@@ -40,10 +40,6 @@ tssc-config:
     config:
       source: docker-archive:backend.tar
       destination-url: quay-quay-enterprise.apps.tssc.rht-set.com
-  push-artifacts:
-  - implementer: Maven
-    config:
-      url: http://artifactory.apps.tssc.rht-set.com/artifactory/tssc/
   deploy:
   - implementer: ArgoCD
     config:
