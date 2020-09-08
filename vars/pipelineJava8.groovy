@@ -228,17 +228,6 @@ def call(
         } // steps
       } // stage
 
-      stage('Validate Configuration Environment') {
-        steps {
-          container('config-lint') {
-              sh """
-                source tssc/bin/activate
-                python -m tssc -c cicd/tssc-config.yml --step validate-environment-configuration --environment ${environment}
-                """
-          } // container
-        } // steps
-      } // stage
-
     } //stages
 
   } // pipeline
