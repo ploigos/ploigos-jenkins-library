@@ -58,6 +58,10 @@ def call(
       image: "${JENKINS_WORKER_IMAGE_SONAR}"
       tty: true
       command: ['sh', '-c', 'cat']
+    - name: 'config-lint'
+      image: 'quay.io/tssc/tssc-tool-config-lint:latest'
+      tty: true
+      command: ['sh', '-c', 'cat']
     volumes:
     - name: quay-registry-secret
       secret:
