@@ -55,3 +55,7 @@ tssc-config:
   - implementer: Configlint
     config:
       rules: cicd/ValidateEnv/
+  uat:
+  - implementer: Maven
+    config: {
+    }
