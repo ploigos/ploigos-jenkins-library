@@ -10,12 +10,15 @@ def call(
   applicationName
 ) {
 
-  String JENKINS_WORKER_IMAGE_JNLP    = 'quay.io/tssc/tssc-ci-agent-jenkins:latest'
-  String JENKINS_WORKER_IMAGE_MAVEN   = 'quay.io/tssc/tssc-tool-maven:latest'
-  String JENKINS_WORKER_IMAGE_BUILDAH = 'quay.io/tssc/tssc-tool-buildah:latest'
-  String JENKINS_WORKER_IMAGE_ARGOCD  = 'quay.io/tssc/tssc-tool-argocd:latest'
-  String JENKINS_WORKER_IMAGE_SKOPEO  = 'quay.io/tssc/tssc-tool-skopeo:latest'
-  String JENKINS_WORKER_IMAGE_SONAR   = 'quay.io/tssc/tssc-tool-sonar:latest'
+  String JENKINS_WORKER_IMAGE_JNLP       = 'quay.io/tssc/tssc-ci-agent-jenkins:latest'
+  String JENKINS_WORKER_IMAGE_MAVEN      = 'quay.io/tssc/tssc-tool-maven:latest'
+  String JENKINS_WORKER_IMAGE_BUILDAH    = 'quay.io/tssc/tssc-tool-buildah:latest'
+  String JENKINS_WORKER_IMAGE_ARGOCD     = 'quay.io/tssc/tssc-tool-argocd:latest'
+  String JENKINS_WORKER_IMAGE_SKOPEO     = 'quay.io/tssc/tssc-tool-skopeo:latest'
+  String JENKINS_WORKER_IMAGE_SONAR      = 'quay.io/tssc/tssc-tool-sonar:latest'
+  String JENKINS_WORKER_IMAGE_CONFIGLINT = 'quay.io/tssc/tssc-tool-config-lint:latest'
+  String JENKINS_WORKER_IMAGE_OPENSCAP   = 'quay.io/tssc/tssc-tool-openscap:latest'
+
   String REGISTRY_SECRET_NAME         = 'quay-basic-auth'
 
   pipeline {
@@ -59,9 +62,15 @@ def call(
       tty: true
       command: ['sh', '-c', 'cat']
     - name: 'config-lint'
-      image: 'quay.io/tssc/tssc-tool-config-lint:latest'
+      image: "${JENKINS_WORKER_IMAGE_CONFIGLINT}"
       tty: true
       command: ['sh', '-c', 'cat']
+    - name: 'openscap'
+      image: "${JENKINS_WORKER_IMAGE_OPENSCAP}"
+      tty: true
+      command: ['sh', '-c', 'cat']
+      securityContext:
+        privileged: true
     volumes:
     - name: quay-registry-secret
       secret:
@@ -84,6 +93,7 @@ def call(
             source tssc/bin/activate
 
             pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple tssc --upgrade
+            pip install --upgrade pip
 
           """
         } // steps
@@ -94,7 +104,7 @@ def call(
           container('maven') {
             sh """
               source tssc/bin/activate
-              python -m tssc -c cicd/tssc-config.yml --step generate-metadata --environment ${environment}
+              python -m tssc --config cicd/tssc-config.yml --step generate-metadata --environment ${environment}
             """
           } // container
         } // steps
@@ -106,7 +116,7 @@ def call(
             withCredentials([usernamePassword(credentialsId: "${gitCredentialsId}", passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
               sh """
                 source tssc/bin/activate
-                python -m tssc -c cicd/tssc-config.yml --step tag-source --step-config password=${GIT_PASSWORD} username=${GIT_USERNAME} --environment ${environment}
+                python -m tssc --config cicd/tssc-config.yml --step tag-source --step-config password=${GIT_PASSWORD} username=${GIT_USERNAME} --environment ${environment}
                 """
             } // withCredentials
           } // container
@@ -118,7 +128,7 @@ def call(
           container('maven') {
             sh """
               source tssc/bin/activate
-              python -m tssc -c cicd/tssc-config.yml --step unit-test --environment ${environment}
+              python -m tssc --config cicd/tssc-config.yml --step unit-test --environment ${environment}
             """
           } // container
         } // steps
@@ -129,7 +139,7 @@ def call(
           container('maven') {
             sh """
               source tssc/bin/activate
-              python -m tssc -c cicd/tssc-config.yml --step package --environment ${environment}
+              python -m tssc --config cicd/tssc-config.yml --step package --environment ${environment}
             """
           } // container
         } // steps
@@ -141,7 +151,7 @@ def call(
             withCredentials([usernamePassword(credentialsId: "${sonarqubeCredentialsId}", passwordVariable: 'SONAR_PASSWORD', usernameVariable: 'SONAR_USER')]) {
               sh """
                 source tssc/bin/activate
-                python -m tssc -c cicd/tssc-config.yml --step static-code-analysis --step-config password=${SONAR_PASSWORD} user=${SONAR_USER} --environment ${environment}
+                python -m tssc --config cicd/tssc-config.yml --step static-code-analysis --step-config password=${SONAR_PASSWORD} user=${SONAR_USER} --environment ${environment}
               """
             } // withCredentials
           } // container
@@ -154,7 +164,7 @@ def call(
             withCredentials([usernamePassword(credentialsId: "${artifactRepoCredentialsId}", passwordVariable: 'ARTIFACTORY_PASSWORD', usernameVariable: 'ARTIFACTORY_USERNAME')]) {
               sh """
                 source tssc/bin/activate
-                python -m tssc -c cicd/tssc-config.yml -s push-artifacts --step-config password=${ARTIFACTORY_PASSWORD} user=${ARTIFACTORY_USERNAME} --environment ${environment}
+                python -m tssc --config cicd/tssc-config.yml --step push-artifacts --step-config password=${ARTIFACTORY_PASSWORD} user=${ARTIFACTORY_USERNAME} --environment ${environment}
                 """
             } // withCredentials
           } // container
@@ -166,7 +176,7 @@ def call(
           container('buildah') {
             sh """
               source tssc/bin/activate
-              python -m tssc -c cicd/tssc-config.yml --step create-container-image --environment ${environment}
+              python -m tssc --config cicd/tssc-config.yml --step create-container-image --environment ${environment}
             """
 
             } // container
@@ -178,7 +188,7 @@ def call(
           container('skopeo') {
             sh """
               source tssc/bin/activate
-              python -m tssc -c cicd/tssc-config.yml --step push-container-image --environment ${environment}
+              python -m tssc --config cicd/tssc-config.yml --step push-container-image --environment ${environment}
             """
             } // container
         } // steps
@@ -195,7 +205,12 @@ def call(
         parallel {
           stage('Static Compliance Image Scan (OpenSCAP)') {
             steps {
-              echo '${STAGE_NAME}'
+              container('openscap') {
+                sh """
+                   source tssc/bin/activate
+                   python -m tssc -c cicd/tssc-config.yml --step container-image-static-compliance-scan --environment ${environment}
+                   """
+              } //container
             } // steps
           } // stage
 
@@ -221,7 +236,7 @@ def call(
             ]) {
               sh """
                 source tssc/bin/activate
-                python -m tssc -c cicd/tssc-config.yml --step deploy --step-config git-password=${GIT_PASSWORD} git-username=${GIT_USERNAME} argocd-password=${ARGOCD_PASSWORD} argocd-username=${ARGOCD_USERNAME} --environment ${environment}
+                python -m tssc --config cicd/tssc-config.yml --step deploy --step-config git-password=${GIT_PASSWORD} git-username=${GIT_USERNAME} argocd-password=${ARGOCD_PASSWORD} argocd-username=${ARGOCD_USERNAME} --environment ${environment}
                 """
             } // withCredentials
           } // container
@@ -233,8 +248,19 @@ def call(
           container('config-lint') {
               sh """
                 source tssc/bin/activate
-                python -m tssc -c cicd/tssc-config.yml --step validate-environment-configuration --environment ${environment}
+                python -m tssc --config cicd/tssc-config.yml --step validate-environment-configuration --environment ${environment}
                 """
+          } // container
+        } // steps
+      } // stage
+
+      stage('Run User Acceptance Tests (Maven)') {
+        steps {
+          container('maven') {
+            sh """
+              source tssc/bin/activate
+              python -m tssc --config cicd/tssc-config.yml --step uat --environment ${environment}
+            """
           } // container
         } // steps
       } // stage
