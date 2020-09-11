@@ -10,12 +10,15 @@ def call(
   applicationName
 ) {
 
-  String JENKINS_WORKER_IMAGE_JNLP    = 'quay.io/tssc/tssc-ci-agent-jenkins:latest'
-  String JENKINS_WORKER_IMAGE_MAVEN   = 'quay.io/tssc/tssc-tool-maven:latest'
-  String JENKINS_WORKER_IMAGE_BUILDAH = 'quay.io/tssc/tssc-tool-buildah:latest'
-  String JENKINS_WORKER_IMAGE_ARGOCD  = 'quay.io/tssc/tssc-tool-argocd:latest'
-  String JENKINS_WORKER_IMAGE_SKOPEO  = 'quay.io/tssc/tssc-tool-skopeo:latest'
-  String JENKINS_WORKER_IMAGE_SONAR   = 'quay.io/tssc/tssc-tool-sonar:latest'
+  String JENKINS_WORKER_IMAGE_JNLP       = 'quay.io/tssc/tssc-ci-agent-jenkins:latest'
+  String JENKINS_WORKER_IMAGE_MAVEN      = 'quay.io/tssc/tssc-tool-maven:latest'
+  String JENKINS_WORKER_IMAGE_BUILDAH    = 'quay.io/tssc/tssc-tool-buildah:latest'
+  String JENKINS_WORKER_IMAGE_ARGOCD     = 'quay.io/tssc/tssc-tool-argocd:latest'
+  String JENKINS_WORKER_IMAGE_SKOPEO     = 'quay.io/tssc/tssc-tool-skopeo:latest'
+  String JENKINS_WORKER_IMAGE_SONAR      = 'quay.io/tssc/tssc-tool-sonar:latest'
+  String JENKINS_WORKER_IMAGE_CONFIGLINT = 'quay.io/tssc/tssc-tool-config-lint:latest'
+  String JENKINS_WORKER_IMAGE_OPENSCAP   = 'quay.io/tssc/tssc-tool-openscap:latest'
+
   String REGISTRY_SECRET_NAME         = 'quay-basic-auth'
 
   pipeline {
@@ -59,9 +62,15 @@ def call(
       tty: true
       command: ['sh', '-c', 'cat']
     - name: 'config-lint'
-      image: 'quay.io/tssc/tssc-tool-config-lint:latest'
+      image: "${JENKINS_WORKER_IMAGE_CONFIGLINT}"
       tty: true
       command: ['sh', '-c', 'cat']
+    - name: 'openscap'
+      image: "${JENKINS_WORKER_IMAGE_OPENSCAP}"
+      tty: true
+      command: ['sh', '-c', 'cat']
+      securityContext:
+        privileged: true
     volumes:
     - name: quay-registry-secret
       secret:
@@ -196,7 +205,12 @@ def call(
         parallel {
           stage('Static Compliance Image Scan (OpenSCAP)') {
             steps {
-              echo '${STAGE_NAME}'
+              container('openscap') {
+                sh """
+                   source tssc/bin/activate
+                   python -m tssc -config cicd/tssc-config.yml --step container-image-static-compliance-scan --environment ${environment}
+                   """
+              } //container
             } // steps
           } // stage
 
