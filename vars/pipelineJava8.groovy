@@ -208,7 +208,7 @@ def call(
               container('openscap') {
                 sh """
                    source tssc/bin/activate
-                   python -m tssc -config cicd/tssc-config.yml --step container-image-static-compliance-scan --environment ${environment}
+                   python -m tssc --config cicd/tssc-config.yml --step container-image-static-compliance-scan --environment ${environment}
                    """
               } //container
             } // steps
