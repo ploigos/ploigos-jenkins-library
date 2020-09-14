@@ -88,7 +88,28 @@ def call(
 
     stages {
 
+      stage('DEV TEST') {
+          when {
+              expression {
+                result = false
+                devBranchPatterns.each {
+                  if ( BRANCH_NAME ==~ it ) {
+                    result = true
+                    break
+                  }
+                return result
+                }
+              }
+          }
 
+        stages {
+          stage('TEST') {
+            steps {
+              echo "Hello"
+            }
+          }
+        }
+      }
 
       stage('Setup') {
         steps {
@@ -183,7 +204,7 @@ def call(
                 sh """
                   source tssc/bin/activate
                   python -m tssc --config cicd/tssc-config.yml --step create-container-image
-                """
+                  """
 
                 } // container
               } // steps
@@ -195,7 +216,7 @@ def call(
                 sh """
                   source tssc/bin/activate
                   python -m tssc --config cicd/tssc-config.yml --step push-container-image
-                """
+                  """
                 } // container
             } // steps
           } // stage
