@@ -2,7 +2,14 @@
 
 // Java Backend Reference Jenkinsfile
 def call(
-environment, gitCredentialsId, sonarqubeCredentialsId, argocdCredentialsId, artifactRepoCredentialsId, applicationName, releaseBranchPatterns = ['main'], devBranchPatterns = ['^feature/.*$']
+    environment,
+    gitCredentialsId,
+    sonarqubeCredentialsId,
+    argocdCredentialsId,
+    artifactRepoCredentialsId,
+    applicationName,
+    releaseBranchPatterns = ['main'],
+    devBranchPatterns = ['^feature/.*$']
 
 ) {
 
@@ -181,9 +188,9 @@ environment, gitCredentialsId, sonarqubeCredentialsId, argocdCredentialsId, arti
                             } // container
                         } // steps
                     } // stage
-                    stage('Image Unit Testing (TBD)') {
+                    stage('Image Unit Testing (Not Implemented)') {
                         steps {
-                            echo "${STAGE_NAME}"
+                            echo "Not Implemented"
                         } // steps
                     } // stage
                     stage('Static Image Scans') {
@@ -199,16 +206,16 @@ environment, gitCredentialsId, sonarqubeCredentialsId, argocdCredentialsId, arti
                                     } //container
                                 } // steps
                             } // stage
-                            stage('Static Vulnerability Image Scan (OpenSCAP)') {
+                            stage('Static Vulnerability Image Scan (OpenSCAP) (Not Implemented)') {
                                 steps {
-                                    echo "${STAGE_NAME}"
+                                    echo "Not Implemented"
                                 } // steps
                             } // stage
                         } // parallel
                     } // stage
-                    stage('Push Trusted Container Image') {
+                    stage('Push Trusted Container Image (Not Implemented)') {
                         steps {
-                            echo "${STAGE_NAME}"
+                            echo "Not Implemented"
                         } // steps
                     } // stage
                 } // CI Stage
@@ -264,16 +271,16 @@ environment, gitCredentialsId, sonarqubeCredentialsId, argocdCredentialsId, arti
                                     } // container
                                 } // steps
                             } // stage
-                            stage('Run Runtime Vulnerability Scans') {
+                            stage('Run Runtime Vulnerability Scans (Not Implemented)') {
                                 steps {
-                                    echo "${STAGE_NAME}"
+                                    echo "Not Implemented"
                                 } // steps
                             } // stage
                         } // parallel
                     } // UAT and Vuln Stage
-                    stage('Run Performance Tests (Limited)') {
+                    stage('Run Performance Tests (Limited) (Not Implemented)') {
                         steps {
-                            echo "${STAGE_NAME}"
+                            echo "Not Implemented"
                         } // steps
                     } // stage
                 } // DEV Stages
@@ -329,16 +336,16 @@ environment, gitCredentialsId, sonarqubeCredentialsId, argocdCredentialsId, arti
                                     } // container
                                 } // steps
                             } // stage
-                            stage('Run Runtime Vulnerability Scans') {
+                            stage('Run Runtime Vulnerability Scans (Not Implemented)') {
                                 steps {
-                                    echo "${STAGE_NAME}"
+                                    echo "Not Implemented"
                                 } // steps
                             } // stage
                         } // parallel
                     } // UAT and Vuln Stage
-                    stage('Run Performance Tests (Limited)') {
+                    stage('Run Performance Tests (Not Implemented)') {
                         steps {
-                            echo "${STAGE_NAME}"
+                            echo "Not Implemented"
                         } // steps
                     } // stage
                 } // TEST Stages
@@ -382,9 +389,9 @@ environment, gitCredentialsId, sonarqubeCredentialsId, argocdCredentialsId, arti
                             } // container
                         } // steps
                     } // stage
-                    stage('Run Canary Testing') {
+                    stage('Run Canary Testing (Not Implemented)') {
                         steps {
-                            echo "${STAGE_NAME}"
+                            echo "Not Implemented"
                         } // steps
                     } // stage
                 } // PROD Stages
@@ -408,7 +415,7 @@ environment, gitCredentialsId, sonarqubeCredentialsId, argocdCredentialsId, arti
                 stages {
                     stage('Collect, Bundle, & Publish Test Reports and Metadata') {
                         steps {
-                            archiveArtifacts artifacts: 'tssc-working/**',
+                            archiveArtifacts artifacts: 'tssc-results/**',
                             onlyIfSuccessful: true
                         } // steps
                     }
