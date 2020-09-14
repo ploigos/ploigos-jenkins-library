@@ -101,9 +101,15 @@ def call(
                 }
               }
           }
+
         stages {
-          stage('Deploy or Update DEV Environment') {
+          stage('TEST') {
             steps {
+              echo "Hello"
+            }
+          }
+        }
+      }
 
       stage('Setup') {
         steps {
