@@ -31,58 +31,58 @@ def call(
         label "${applicationName}-${env.BUILD_ID}"
         cloud 'openshift'
         yaml """
-  apiVersion: v1
-  kind: Pod
-  spec:
-    serviceAccount: jenkins
-    containers:
-    - name: 'jnlp'
-      image: "${JENKINS_WORKER_IMAGE_JNLP}"
-      tty: true
-    - name: 'maven'
-      image: "${JENKINS_WORKER_IMAGE_MAVEN}"
-      tty: true
-      command: ['sh', '-c', 'cat']
-    - name: 'buildah'
-      image: "${JENKINS_WORKER_IMAGE_BUILDAH}"
-      tty: true
-      command: ['sh', '-c', 'cat']
-      securityContext:
-        privileged: true
-    - name: 'argocd'
-      image: "${JENKINS_WORKER_IMAGE_ARGOCD}"
-      tty: true
-      command: ['sh', '-c', 'cat']
-    - name: 'skopeo'
-      image: "${JENKINS_WORKER_IMAGE_SKOPEO}"
-      tty: true
-      volumeMounts:
-      - mountPath: /home/tssc/
-        name: quay-registry-secret
-      command: ['sh', '-c', 'cat']
-    - name: 'sonar'
-      image: "${JENKINS_WORKER_IMAGE_SONAR}"
-      tty: true
-      command: ['sh', '-c', 'cat']
-    - name: 'config-lint'
-      image: "${JENKINS_WORKER_IMAGE_CONFIGLINT}"
-      tty: true
-      command: ['sh', '-c', 'cat']
-    - name: 'openscap'
-      image: "${JENKINS_WORKER_IMAGE_OPENSCAP}"
-      tty: true
-      command: ['sh', '-c', 'cat']
-      securityContext:
-        privileged: true
-    volumes:
-    - name: quay-registry-secret
-      secret:
-        defaultMode: 440
-        secretName: ${REGISTRY_SECRET_NAME}
-        items:
-        - key: .dockerconfigjson
-          path: .docker/config.json
-  """
+          apiVersion: v1
+          kind: Pod
+          spec:
+            serviceAccount: jenkins
+            containers:
+            - name: 'jnlp'
+              image: "${JENKINS_WORKER_IMAGE_JNLP}"
+              tty: true
+            - name: 'maven'
+              image: "${JENKINS_WORKER_IMAGE_MAVEN}"
+              tty: true
+              command: ['sh', '-c', 'cat']
+            - name: 'buildah'
+              image: "${JENKINS_WORKER_IMAGE_BUILDAH}"
+              tty: true
+              command: ['sh', '-c', 'cat']
+              securityContext:
+                privileged: true
+            - name: 'argocd'
+              image: "${JENKINS_WORKER_IMAGE_ARGOCD}"
+              tty: true
+              command: ['sh', '-c', 'cat']
+            - name: 'skopeo'
+              image: "${JENKINS_WORKER_IMAGE_SKOPEO}"
+              tty: true
+              volumeMounts:
+              - mountPath: /home/tssc/
+                name: quay-registry-secret
+              command: ['sh', '-c', 'cat']
+            - name: 'sonar'
+              image: "${JENKINS_WORKER_IMAGE_SONAR}"
+              tty: true
+              command: ['sh', '-c', 'cat']
+            - name: 'config-lint'
+              image: "${JENKINS_WORKER_IMAGE_CONFIGLINT}"
+              tty: true
+              command: ['sh', '-c', 'cat']
+            - name: 'openscap'
+              image: "${JENKINS_WORKER_IMAGE_OPENSCAP}"
+              tty: true
+              command: ['sh', '-c', 'cat']
+              securityContext:
+                privileged: true
+            volumes:
+            - name: quay-registry-secret
+              secret:
+                defaultMode: 440
+                secretName: ${REGISTRY_SECRET_NAME}
+                items:
+                - key: .dockerconfigjson
+                  path: .docker/config.json
+          """
               }
           }
 
@@ -171,7 +171,28 @@ def call(
                     source tssc/bin/activate
                     python -m tssc --config cicd/tssc-config.yml --step push-artifacts --step-config password=${ARTIFACTORY_PASSWORD} user=${ARTIFACTORY_USERNAME}
                     """
-                } // withCredentials
+      stage('DEV TEST') {
+          when {
+              expression {
+                result = false
+                devBranchPatterns.each {
+                  echo it
+                  if ( BRANCH_NAME ==~ it ) {
+                    result = true
+                    break
+                  }
+                return result
+                }
+              }
+          }
+        stages {
+          stage('Testing') {
+            steps {
+               echo "${STAGE_NAME}"
+            }
+          }
+        }
+      }
               } // container
             } // steps
           } // stage
