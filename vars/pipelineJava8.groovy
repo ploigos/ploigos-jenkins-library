@@ -88,6 +88,29 @@ def call(
 
     stages {
 
+      stage('DEV TEST') {
+          when {
+              expression {
+                result = false
+                devBranchPatterns.each {
+                  echo it
+                  if ( BRANCH_NAME ==~ it ) {
+                    result = true
+                    break
+                  }
+                return result
+                }
+              }
+          }
+        stages {
+          stage('Deploy or Update DEV Environment') {
+            steps {
+               echo "${STAGE_NAME}"
+            }
+          }
+        }
+      }
+
       stage('Setup') {
         steps {
 
@@ -199,9 +222,7 @@ def call(
             } // steps
           } // stage
 
-          stage('Image Unit Testing (TBD)') {
-            steps {
-              echo "${STAGE_NAME}"
+          stage('Image Unit Testing (TBD)') { echo "${STAGE_NAME}"
             } // steps
           } // stage
 
