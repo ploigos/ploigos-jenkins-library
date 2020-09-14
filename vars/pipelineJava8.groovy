@@ -103,7 +103,7 @@ def call(
               }
           }
         stages {
-          stage('Deploy or Update DEV Environment') {
+          stage('Testing') {
             steps {
                echo "${STAGE_NAME}"
             }
