@@ -102,7 +102,7 @@ def call(
         } // steps
       } // stage
 
-      stage('Continuos Integration') {
+      stage('Continuous Integration') {
         stages {
           stage('Generate Metadata') {
             steps {
@@ -240,6 +240,7 @@ def call(
               expression {
                 result = false
                 devBranchPatterns.each {
+                  echo it
                   if ( BRANCH_NAME ==~ Pattern.compile(it) ) {
                     result = true
                     break
