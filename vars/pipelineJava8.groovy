@@ -91,13 +91,15 @@ def call(
       stage('DEV TEST') {
           when {
               expression {
-                result = false
-                devBranchPatterns.each {
+                devBranchPatterns.find {
                   if ( BRANCH_NAME ==~ it ) {
                     print "match with ${it}";
-                    result = true;
-                    break;
+                    result = true
+                    return true
+                  } else {
+                    return false
                   }
+
                 return result
                 }
               }
