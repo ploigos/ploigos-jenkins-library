@@ -8,7 +8,7 @@ def call(
   argocdCredentialsId,
   artifactRepoCredentialsId,
   applicationName,
-  releaseBranchPatterns = ['main'],
+  releaseBranchPatterns = ['^main$'],
   devBranchPatterns = ['^feature/.*$']
 
 ) {
@@ -91,7 +91,7 @@ def call(
       stage('DEV TEST') {
           when {
               expression {
-                devBranchPatterns.find {
+                releaseBranchPatterns.find {
                   if ( BRANCH_NAME ==~ it ) {
                     print "match with ${it}";
                     result = true
