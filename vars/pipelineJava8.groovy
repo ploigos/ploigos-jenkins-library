@@ -86,30 +86,7 @@ def call(
               }
           }
 
-    stages {
 
-      stage('DEV TEST') {
-          when {
-              expression {
-                result = false
-                devBranchPatterns.each {
-                  if ( BRANCH_NAME ==~ it ) {
-                    result = true
-                    break
-                  }
-                return result
-                }
-              }
-          }
-
-        stages {
-          stage('TEST') {
-            steps {
-              echo "Hello"
-            }
-          }
-        }
-      }
 
       stage('Setup') {
         steps {
