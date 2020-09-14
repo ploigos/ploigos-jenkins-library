@@ -88,7 +88,7 @@ def call(
 
     stages {
 
-      stage('DEV') {
+      stage('DEV TEST') {
           when {
               expression {
                 result = false
@@ -194,28 +194,6 @@ def call(
                     source tssc/bin/activate
                     python -m tssc --config cicd/tssc-config.yml --step push-artifacts --step-config password=${ARTIFACTORY_PASSWORD} user=${ARTIFACTORY_USERNAME}
                     """
-      stage('DEV TEST') {
-          when {
-              expression {
-                result = false
-                devBranchPatterns.each {
-                  echo it
-                  if ( BRANCH_NAME ==~ it ) {
-                    result = true
-                    break
-                  }
-                return result
-                }
-              }
-          }
-        stages {
-          stage('Testing') {
-            steps {
-               echo "${STAGE_NAME}"
-            }
-          }
-        }
-      }
               } // container
             } // steps
           } // stage
