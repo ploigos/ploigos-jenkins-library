@@ -88,6 +88,23 @@ def call(
 
     stages {
 
+      stage('DEV') {
+          when {
+              expression {
+                result = false
+                devBranchPatterns.each {
+                  if ( BRANCH_NAME ==~ it ) {
+                    result = true
+                    break
+                  }
+                return result
+                }
+              }
+          }
+        stages {
+          stage('Deploy or Update DEV Environment') {
+            steps {
+
       stage('Setup') {
         steps {
 
