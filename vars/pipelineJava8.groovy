@@ -230,21 +230,13 @@ def call(
               echo "${STAGE_NAME}"
             } // steps
           } // stage
-        } // CI Stage
-      }// CI Stages
+        } // CI Stages
+      }// CI Stage
 
       stage('DEV') {
           when {
-              expression {
-                result = false
-                devBranchPatterns.each {
-                  echo it
-                  if ( BRANCH_NAME ==~ Pattern.compile(it) ) {
-                    result = true
-                    break
-                  }
-                return result
-                }
+              anyOf {
+                  branch 'features/*';
               }
           }
         stages {
