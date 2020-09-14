@@ -94,8 +94,9 @@ def call(
                 result = false
                 devBranchPatterns.each {
                   if ( BRANCH_NAME ==~ it ) {
-                    result = true
-                    break
+                    print "match with ${it}";
+                    result = true;
+                    break;
                   }
                 return result
                 }
