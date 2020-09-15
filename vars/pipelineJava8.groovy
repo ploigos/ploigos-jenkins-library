@@ -90,6 +90,7 @@ def call(
 
             stage('Setup') {
                 steps {
+                    echo "BRANCH NAME IS ${BRANCH_NAME}"
                     sh """
                         python -m venv tssc
                         source tssc/bin/activate
