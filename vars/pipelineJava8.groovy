@@ -9,7 +9,7 @@ def call(
     artifactRepoCredentialsId,
     applicationName,
     releaseBranchPatterns = ['main'],
-    devBranchPatterns = ['^feature/.*$']
+    devBranchPatterns = ['^feature/.*$', '^PR-.*$']
 
 ) {
 
