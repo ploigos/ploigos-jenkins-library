@@ -152,12 +152,10 @@ def call(
       stage('Push Artifacts to Repository with Metadata') {
         steps {
           container('maven') {
-            withCredentials([usernamePassword(credentialsId: "${artifactRepoCredentialsId}", passwordVariable: 'ARTIFACTORY_PASSWORD', usernameVariable: 'ARTIFACTORY_USERNAME')]) {
               sh """
                 source tssc/bin/activate
-                python -m tssc --config cicd/tssc-config.yml --step push-artifacts --step-config password=${ARTIFACTORY_PASSWORD} user=${ARTIFACTORY_USERNAME} --environment ${environment}
+                python -m tssc --config cicd/tssc-config.yml --step push-artifacts --step-config --environment ${environment}
                 """
-            } // withCredentials
           } // container
         } // steps
       } // stage
@@ -252,6 +250,12 @@ def call(
       } // stage
 
     } //stages
+    post {
+      always {
+        archiveArtifacts artifacts: 'tssc-working/**/*.*'
+      }
+    } // post
+
 
   } // pipeline
 
