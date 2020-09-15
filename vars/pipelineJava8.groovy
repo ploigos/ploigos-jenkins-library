@@ -84,6 +84,7 @@ def call(
             source tssc/bin/activate
 
             pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple tssc --upgrade
+            pip install git+https://github.com/rhtconsulting/tssc-python-package.git@feature/NAPSSPO-996
             pip install --upgrade pip
 
           """
