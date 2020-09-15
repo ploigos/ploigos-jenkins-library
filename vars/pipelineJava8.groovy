@@ -131,6 +131,10 @@ def call(
             sh """
               source tssc/bin/activate
               python -m tssc --config cicd/tssc-config.yml --step package --environment ${environment}
+              ls -la
+              pwd
+              ls tssc-working
+              ls tssc-working/package
             """
           } // container
         } // steps
@@ -154,7 +158,7 @@ def call(
           container('maven') {
               sh """
                 source tssc/bin/activate
-                python -m tssc --config cicd/tssc-config.yml --step push-artifacts --step-config --environment ${environment}
+                python -m tssc --config cicd/tssc-config.yml --step push-artifacts --environment ${environment}
                 """
           } // container
         } // steps
