@@ -35,12 +35,9 @@ def call(Map inputMap) {
     String JENKINS_WORKER_IMAGE_CONFIGLINT = "${input.jenkinsWorkersImageRegesitryURI}/${input.jenkinsWorkersImageRepositoryName}/tssc-tool-config-lint:${input.jenkinsWorkersImageTag}"
     String JENKINS_WORKER_IMAGE_OPENSCAP   = "${input.jenkinsWorkersImageRegesitryURI}/${input.jenkinsWorkersImageRepositoryName}/tssc-tool-openscap:${input.jenkinsWorkersImageTag}"
 
-    // TODO: remove me after updating deploy step to use tssc-config to reference or generate docker config
-    String REGISTRY_SECRET_NAME = 'quay-basic-auth'
-
     // SEE: https://stackoverflow.com/questions/25088034/use-git-repo-name-as-env-variable-in-jenkins-job
     String GIT_URL = scm.userRemoteConfigs[0].url
-    String GIT_BRANCH = scm.branches[0].name.replaceAll(/[^a-zA-Z1-9]/, '-') // repalce everything that isnt a-zA-Z1-9 with -
+    String GIT_BRANCH = scm.branches[0].name.replaceAll(/[^a-zA-Z0-9]/, '-') // repalce everything that isnt a-zA-Z0-9 with -
     String GIT_REPO_NAME = "${GIT_URL.replaceFirst(/^.*\/([^\/]+?).git$/, '$1')}"
 
     // determine the command to install the TSSC lib
@@ -105,8 +102,6 @@ def call(Map inputMap) {
           volumeMounts:
           - mountPath: /home/tssc
             name: home-tssc
-          - mountPath: /home/tssc/.docker
-            name: quay-registry-secret
         - name: 'sonar'
           image: "${JENKINS_WORKER_IMAGE_SONAR}"
           imagePullPolicy: "${input.jenkinsWorkersImagePullPolicy}"
@@ -136,13 +131,6 @@ def call(Map inputMap) {
         volumes:
         - name: home-tssc
           emptyDir: {}
-        - name: quay-registry-secret
-          secret:
-              defaultMode: 440
-              secretName: ${REGISTRY_SECRET_NAME}
-              items:
-              - key: .dockerconfigjson
-                path: config.json
     """
             }
         }
