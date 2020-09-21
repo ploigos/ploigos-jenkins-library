@@ -79,6 +79,39 @@ class PipelineInput implements Serializable {
      *
      * @SEE https://www.jenkins.io/doc/book/using/using-credentials/#configuring-credentials */
     String credentialIDsopsPGPKey = 'sops-pgp-key'
+
+    /* Kubernetes ServiceAccount that the Jenkins Worker Kubernetes Pod should be deployed with.
+     *
+     * IMPORTANT: This Kubernetes ServiceAccount needs to have access (via RoleBinding to Role)
+     *            to a SecurityContextConstraints that can runAsUser kubernetesPodRunAsUserUID.
+     *
+     * EXAMPLE SecurityContextConstraints:
+     *      kind: SecurityContextConstraints
+     *      apiVersion: security.openshift.io/v1
+     *      metadata:
+     *      annotations:
+     *          kubernetes.io/description: TODO
+     *       name: run-as-user-${kubernetesPodRunAsUserUID}
+     *       runAsUser:
+     *       type: MustRunAsRange
+     *       uidRangeMax: ${kubernetesPodRunAsUserUID}
+     *       uidRangeMin: ${kubernetesPodRunAsUserUID}
+     *       seLinuxContext:
+     *       type: MustRunAs
+     */
+    String kubernetesServiceAccountForJenkinsWorkersPod = 'jenkins'
+
+    /* The UID to run the Jenkins Worker Kubernetes containers as.
+     *
+     * IMPORTANT: This NEEDS be a UID that exists in the tssc-base image.
+     *            This is due to limitations of how subuid, subgid, and namespaces work.
+     *
+     * NOTE: The quay.io/tssc/tssc-base image uses UID 1001 but if you don't like that UID
+     *       then you can use https://github.com/rhtconsulting/tssc-containers to create custom
+     *       versions of the tssc containers and passing in the container ARG `TSSC_USER_UID` to
+     *       change the UID.
+     */
+    int kubernetesPodRunAsUserUID = 1001
 }
 
 // Java Backend Reference Jenkinsfile
@@ -129,7 +162,9 @@ def call(Map inputMap) {
     apiVersion: v1
     kind: Pod
     spec:
-        serviceAccount: jenkins
+        serviceAccount: ${input.kubernetesServiceAccountForJenkinsWorkersPod}
+        securityContext:
+            runAsUser: ${input.kubernetesPodRunAsUserUID}
         containers:
         - name: 'jnlp'
           image: "${JENKINS_WORKER_IMAGE_JNLP}"
@@ -154,8 +189,6 @@ def call(Map inputMap) {
           volumeMounts:
           - mountPath: /home/tssc
             name: home-tssc
-          securityContext:
-              privileged: true
         - name: 'argocd'
           image: "${JENKINS_WORKER_IMAGE_ARGOCD}"
           imagePullPolicy: "${input.jenkinsWorkersImagePullPolicy}"
@@ -196,8 +229,6 @@ def call(Map inputMap) {
           volumeMounts:
           - mountPath: /home/tssc
             name: home-tssc
-          securityContext:
-              privileged: true
         volumes:
         - name: home-tssc
           emptyDir: {}
@@ -309,7 +340,6 @@ def call(Map inputMap) {
                                         --config ${input.configDir} \
                                         --step create-container-image
                                 """
-
                             } // container
                         } // steps
                     } // stage
