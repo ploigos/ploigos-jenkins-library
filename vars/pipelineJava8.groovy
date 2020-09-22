@@ -1,25 +1,84 @@
 #!/usr/bin/env groovy
 
 class PipelineInput implements Serializable {
-    //Required
+    /* path relative to the root of the project going through the Workflow
+     * to the directory containing the workflow configuration files. */
     String   configDir   = ''
+
+    /* name of the "Development" enviornment used in the configuration files */
     String   envNameDev  = 'DEV'
+
+    /* name of the "Test" enviornment used in the configuration files */
     String   envNameTest = 'TEST'
+
+    /* name of the "Production" enviornment used in the configuration files */
     String   envNameProd = 'PROD'
+
+    /* Array of regex patterns for branches that should be deployed to
+     * Test and then Production environments. */
     String[] releaseBranchPatterns  = ['main']
+
+    /* Array of regex patterns for branches that should be deployed to
+     * Development environments */
     String[] devBranchPatterns      = ['^feature/.*$', '^PR-.*$']
 
+    /* URI to the container registry hosting the Jenkins workers images used by this pipeline */
     String jenkinsWorkersImageRegesitryURI   = 'quay.io'
+
+    /* Container image repository name hosting the Jenkins workers images used by this pipeline */
     String jenkinsWorkersImageRepositoryName = 'tssc'
+
+    /* Container image tag to use for the Jenkins workers images used by this pipeline */
     String jenkinsWorkersImageTag            = 'latest'
+
+    /* Policy for pulling new versions of the jenkinsWorkersImageTag when running this pipeline */
     String jenkinsWorkersImagePullPolicy     = 'IfNotPresent'
 
-    String credentialIDsopsPGPKey = 'sops-pgp-key'
-
-    //Optional
+    /* If tsscLibSourceUrl is not supplied this will be passed to pip as --index-url
+     * for installing the 'tssc' python library and its dependicies.
+     *
+     * NOTE:    PIP is indeterminate whether it will pull packages from
+     *          --index-url or --extra-index-url, therefor be sure to specify tsscLibVersion
+     *          if trying to pull a specific version from a specific index.
+     *
+     * @SEE https://pip.pypa.io/en/stable/reference/pip_install/#id48 */
     String tsscLibIndexUrl  = 'https://pypi.org/simple/'
+
+    /* If tsscLibSourceUrl is not supplied this will be passed to pip as --extra-index-url
+     * for installing the 'tssc' python library and its dependicies.
+     *
+     * NOTE:    PIP is indeterminate whether it will pull packages from
+     *          --index-url or --extra-index-url, therefor be sure to specify tsscLibVersion
+     *          if trying to pull a specific version from a specific index.
+     *
+     * @SEE https://pip.pypa.io/en/stable/reference/pip_install/#id48 */
+    String tsscLibExtraIndexUrl = 'https://pypi.org/simple/'
+
+    /* If tsscLibSourceUrl is not supplied this will be passed to pip as the version
+     * of the 'tssc' library to install.
+     *
+     * NOTE:    If not given pip will install the latest from either --index-url or
+     *          --extra-index-url indeterminantly */
     String tsscLibVersion   = null
+
+    /* If given this will be used as the source location to install the 'tssc' library from
+     * rather then from a PEP 503 compliant repository.
+     *
+     * EXAMPLE 1: git+https://github.com/rhtconsulting/tssc-python-package.git@feature/NAPSSPO-1018
+     *            installs from the public 'rhtconsulting' fork from
+     *            the 'feature/NAPSSPO-1018' branch.
+     *
+     * EXAMPLE 2: git+https://gitea.internal.example.xyz/tools/tssc-python-package.git@main
+     *            installs from an internal fork of the 'tssc' library from the 'main' branch. */
     String tsscLibSourceUrl = null
+
+    /* Jenkins Credential of type 'Secret file' storing PGP key to install.
+     *
+     * This is helpful if some of the projects configuration is encrypted with SOPS and
+     * Jenkins is expected to use a PGP key to decrypt that configuration.
+     *
+     * @SEE https://www.jenkins.io/doc/book/using/using-credentials/#configuring-credentials */
+    String credentialIDsopsPGPKey = 'sops-pgp-key'
 }
 
 // Java Backend Reference Jenkinsfile
@@ -44,7 +103,18 @@ def call(Map inputMap) {
     if(input.tsscLibSourceUrl) {
         TSSC_LIB_INSTALL_CMD = "python -m pip install --upgrade ${input.tsscLibSourceUrl}"
     } else {
-        TSSC_LIB_INSTALL_CMD = "python -m pip install --upgrade --index-url ${input.tsscLibIndexUrl} --extra-index-url https://pypi.org/simple tssc"
+        indexUrlFlag = ""
+        if(input.tsscLibIndexUrl) {
+            indexUrlFlag = "--index-url ${input.tsscLibIndexUrl}"
+        }
+
+        extraIndexUrlFlag = ""
+        if(input.tsscLibExtraIndexUrl) {
+            extraIndexUrlFlag = "--extra-index-url ${input.tsscLibExtraIndexUrl}"
+        }
+
+        TSSC_LIB_INSTALL_CMD = "python -m pip install --upgrade ${indexUrlFlag} ${extraIndexUrlFlag} tssc"
+
         if(input.tsscLibVersion) {
             TSSC_LIB_INSTALL_CMD += "==${input.tsscLibVersion}"
         }
