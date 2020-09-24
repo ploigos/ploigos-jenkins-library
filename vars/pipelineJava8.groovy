@@ -116,8 +116,14 @@ class PipelineInput implements Serializable {
 
 // Java Backend Reference Jenkinsfile
 def call(Map inputMap) {
-    input = new PipelineInput(inputMap)
+    /* Match everything that isn't a-z, a-Z, 0-9, -, _, or .
+    *
+    * See https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set
+    */
+    String KUBE_LABEL_NOT_SAFE_CHARS_REGEX = /[^a-zA-Z0-9\-_\.]/
+    int KUBE_LABEL_MAX_LENGTH = 62
 
+    input = new PipelineInput(inputMap)
     String JENKINS_WORKER_IMAGE_JNLP       = "${input.jenkinsWorkersImageRegesitryURI}/${input.jenkinsWorkersImageRepositoryName}/tssc-ci-agent-jenkins:${input.jenkinsWorkersImageTag}"
     String JENKINS_WORKER_IMAGE_MAVEN      = "${input.jenkinsWorkersImageRegesitryURI}/${input.jenkinsWorkersImageRepositoryName}/tssc-tool-maven:${input.jenkinsWorkersImageTag}"
     String JENKINS_WORKER_IMAGE_BUILDAH    = "${input.jenkinsWorkersImageRegesitryURI}/${input.jenkinsWorkersImageRepositoryName}/tssc-tool-buildah:${input.jenkinsWorkersImageTag}"
@@ -128,9 +134,15 @@ def call(Map inputMap) {
     String JENKINS_WORKER_IMAGE_OPENSCAP   = "${input.jenkinsWorkersImageRegesitryURI}/${input.jenkinsWorkersImageRepositoryName}/tssc-tool-openscap:${input.jenkinsWorkersImageTag}"
 
     // SEE: https://stackoverflow.com/questions/25088034/use-git-repo-name-as-env-variable-in-jenkins-job
+    String GIT_BRANCH = scm.branches[0].name
+    String GIT_BRANCH_KUBE_LABEL_VALUE = GIT_BRANCH
+        .replaceAll(KUBE_LABEL_NOT_SAFE_CHARS_REGEX, '_')
+        .drop(GIT_BRANCH.length()-KUBE_LABEL_MAX_LENGTH)
     String GIT_URL = scm.userRemoteConfigs[0].url
-    String GIT_BRANCH = scm.branches[0].name.replaceAll(/[^a-zA-Z0-9]/, '-') // repalce everything that isnt a-zA-Z0-9 with -
     String GIT_REPO_NAME = "${GIT_URL.replaceFirst(/^.*\/([^\/]+?).git$/, '$1')}"
+    String GIT_REPO_NAME_KUBE_LABEL_VALUE = GIT_REPO_NAME
+        .replaceAll(KUBE_LABEL_NOT_SAFE_CHARS_REGEX, '-')
+        .drop(GIT_REPO_NAME.length()-KUBE_LABEL_MAX_LENGTH)
 
     // determine the command to install the TSSC lib
     if(input.tsscLibSourceUrl) {
@@ -156,11 +168,15 @@ def call(Map inputMap) {
     pipeline {
         agent {
             kubernetes {
-                label "${GIT_REPO_NAME}-${GIT_BRANCH}-${env.BUILD_ID}"
                 cloud 'openshift'
                 yaml """
     apiVersion: v1
     kind: Pod
+    metadata:
+        labels:
+            git-repo-name: ${GIT_REPO_NAME_KUBE_LABEL_VALUE}
+            git-branch-name: ${GIT_BRANCH_KUBE_LABEL_VALUE}
+            jenkins-build-id: ${env.BUILD_ID}
     spec:
         serviceAccount: ${input.kubernetesServiceAccountForJenkinsWorkersPod}
         securityContext:
