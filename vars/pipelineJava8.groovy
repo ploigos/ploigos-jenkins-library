@@ -34,6 +34,11 @@ class PipelineInput implements Serializable {
     /* Policy for pulling new versions of the jenkinsWorkersImageTag when running this pipeline */
     String jenkinsWorkersImagePullPolicy     = 'IfNotPresent'
 
+    /* If true, then pull the tssc python source code and build it. tsscLibIndexUrl,
+     * tsscLibExtraIndexUrl, tsscLibVersion, and tsscLibSourceUrl are ignored if this is false.
+     */
+    boolean updateTsscLibrary = false
+
     /* If tsscLibSourceUrl is not supplied this will be passed to pip as --index-url
      * for installing the 'tssc' python library and its dependicies.
      *
@@ -256,12 +261,20 @@ def call(Map inputMap) {
             stage('Setup') {
                 steps {
                     sh """
-                        echo "Install TSSC module"
-                        python -m venv tssc
-                        source tssc/bin/activate
-                        python -m pip install --upgrade pip
-                        ${TSSC_LIB_INSTALL_CMD}
+                        echo "Create Python venv"
+                        python -m venv --system-site-packages --copies tssc
                     """
+
+                    script {
+                        if(input.updateTsscLibrary) {
+                            sh """
+                                echo "Install TSSC module"
+                                source tssc/bin/activate
+                                python -m pip install --upgrade pip
+                                ${TSSC_LIB_INSTALL_CMD}
+                            """
+                        }
+                    }
 
                     withCredentials([
                         file(credentialsId: input.credentialIDsopsPGPKey, variable: 'sops_pgp_key')
