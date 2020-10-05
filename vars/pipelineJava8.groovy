@@ -131,9 +131,8 @@ def call(Map inputMap) {
     input = new PipelineInput(inputMap)
     String JENKINS_WORKER_IMAGE_JNLP       = "${input.jenkinsWorkersImageRegesitryURI}/${input.jenkinsWorkersImageRepositoryName}/tssc-ci-agent-jenkins:${input.jenkinsWorkersImageTag}"
     String JENKINS_WORKER_IMAGE_MAVEN      = "${input.jenkinsWorkersImageRegesitryURI}/${input.jenkinsWorkersImageRepositoryName}/tssc-tool-maven:${input.jenkinsWorkersImageTag}"
-    String JENKINS_WORKER_IMAGE_BUILDAH    = "${input.jenkinsWorkersImageRegesitryURI}/${input.jenkinsWorkersImageRepositoryName}/tssc-tool-buildah:${input.jenkinsWorkersImageTag}"
+    String JENKINS_WORKER_IMAGE_CONTAINERS = "${input.jenkinsWorkersImageRegesitryURI}/${input.jenkinsWorkersImageRepositoryName}/tssc-tool-containers:${input.jenkinsWorkersImageTag}"
     String JENKINS_WORKER_IMAGE_ARGOCD     = "${input.jenkinsWorkersImageRegesitryURI}/${input.jenkinsWorkersImageRepositoryName}/tssc-tool-argocd:${input.jenkinsWorkersImageTag}"
-    String JENKINS_WORKER_IMAGE_SKOPEO     = "${input.jenkinsWorkersImageRegesitryURI}/${input.jenkinsWorkersImageRepositoryName}/tssc-tool-skopeo:${input.jenkinsWorkersImageTag}"
     String JENKINS_WORKER_IMAGE_SONAR      = "${input.jenkinsWorkersImageRegesitryURI}/${input.jenkinsWorkersImageRepositoryName}/tssc-tool-sonar:${input.jenkinsWorkersImageTag}"
     String JENKINS_WORKER_IMAGE_CONFIGLINT = "${input.jenkinsWorkersImageRegesitryURI}/${input.jenkinsWorkersImageRepositoryName}/tssc-tool-config-lint:${input.jenkinsWorkersImageTag}"
     String JENKINS_WORKER_IMAGE_OPENSCAP   = "${input.jenkinsWorkersImageRegesitryURI}/${input.jenkinsWorkersImageRepositoryName}/tssc-tool-openscap:${input.jenkinsWorkersImageTag}"
@@ -202,8 +201,8 @@ def call(Map inputMap) {
           volumeMounts:
           - mountPath: /home/tssc
             name: home-tssc
-        - name: 'buildah'
-          image: "${JENKINS_WORKER_IMAGE_BUILDAH}"
+        - name: 'containers'
+          image: "${JENKINS_WORKER_IMAGE_CONTAINERS}"
           imagePullPolicy: "${input.jenkinsWorkersImagePullPolicy}"
           tty: true
           command: ['sh', '-c', 'cat']
@@ -212,14 +211,6 @@ def call(Map inputMap) {
             name: home-tssc
         - name: 'argocd'
           image: "${JENKINS_WORKER_IMAGE_ARGOCD}"
-          imagePullPolicy: "${input.jenkinsWorkersImagePullPolicy}"
-          tty: true
-          command: ['sh', '-c', 'cat']
-          volumeMounts:
-          - mountPath: /home/tssc
-            name: home-tssc
-        - name: 'skopeo'
-          image: "${JENKINS_WORKER_IMAGE_SKOPEO}"
           imagePullPolicy: "${input.jenkinsWorkersImagePullPolicy}"
           tty: true
           command: ['sh', '-c', 'cat']
@@ -362,7 +353,7 @@ def call(Map inputMap) {
                     } // stage
                     stage('Create Container Image') {
                         steps {
-                            container('buildah') {
+                            container('containers') {
                                 sh """
                                     source tssc/bin/activate
                                     python -m tssc \
@@ -400,7 +391,7 @@ def call(Map inputMap) {
                     } // stage
                     stage('Push Trusted Container Image to Repository') {
                         steps {
-                            container('skopeo') {
+                            container('containers') {
                                 sh """
                                     source tssc/bin/activate
                                     python -m tssc \
