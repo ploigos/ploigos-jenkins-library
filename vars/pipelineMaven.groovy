@@ -402,9 +402,16 @@ def call(Map inputMap) {
                                     } //container
                                 } // steps
                             } // stage
-                            stage('Static Vulnerability Image Scan (Not Implemented)') {
+                            stage('Static Vulnerability Image Scan') {
                                 steps {
-                                    echo "Not Implemented"
+                                    container('openscap') {
+                                        sh """
+                                            source tssc/bin/activate
+                                            python -m tssc \
+                                                --config ${input.configDir} \
+                                                --step container-image-static-vulnerability-scan
+                                        """
+                                    } //container
                                 } // steps
                             } // stage
                         } // parallel
