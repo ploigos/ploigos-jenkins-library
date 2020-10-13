@@ -187,6 +187,9 @@ def call(Map inputMap) {
     }
 
     pipeline {
+        options {
+            ansiColor('xterm')
+        }
         agent {
             kubernetes {
                 cloud 'openshift'
