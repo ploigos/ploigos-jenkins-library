@@ -1,17 +1,23 @@
 #!/usr/bin/env groovy
 
 class PipelineInput implements Serializable {
-    /* path relative to the root of the project going through the Workflow
-     * to the directory containing the workflow configuration files. */
+    /* Path to pass to the [TSSC library](https://rhtconsulting.github.io/tssc-python-package/)
+     * `--config` flag. */
     String   configDir   = ''
 
-    /* name of the "Development" enviornment used in the configuration files */
+    /* Name of the "Development" environment used in the configuration files and to pass to the
+     * [TSSC library](https://rhtconsulting.github.io/tssc-python-package/) `--environment` flag
+     * where appropriate. */
     String   envNameDev  = 'DEV'
 
-    /* name of the "Test" enviornment used in the configuration files */
+    /* Name of the "Test" environment used in the configuration files and to pass to the
+     * [TSSC library](https://rhtconsulting.github.io/tssc-python-package/) `--environment` flag
+     * where appropriate. */
     String   envNameTest = 'TEST'
 
-    /* name of the "Production" enviornment used in the configuration files */
+    /* Name of the "Production" environment used in the configuration files and to pass to the
+     * [TSSC library](https://rhtconsulting.github.io/tssc-python-package/) `--environment` flag
+     * where appropriate. */
     String   envNameProd = 'PROD'
 
     /* Array of regex patterns for branches that should be deployed to
@@ -22,25 +28,28 @@ class PipelineInput implements Serializable {
      * Development environments */
     String[] devBranchPatterns      = ['^feature/.*$', '^PR-.*$']
 
-    /* URI to the container registry hosting the Jenkins workers images used by this pipeline */
+    /* URI to the container registry hosting the Jenkins workers images used by this pipeline. */
     String jenkinsWorkersImageRegesitryURI   = 'quay.io'
 
-    /* Container image repository name hosting the Jenkins workers images used by this pipeline */
+    /* Container image repository name hosting the Jenkins workers images used by this pipeline. */
     String jenkinsWorkersImageRepositoryName = 'tssc'
 
-    /* Container image tag to use for the Jenkins workers images used by this pipeline */
+    /* Container image tag to use for the Jenkins workers images used by this pipeline. */
     String jenkinsWorkersImageTag            = 'latest'
 
-    /* Policy for pulling new versions of the jenkinsWorkersImageTag when running this pipeline */
+    /* Policy for pulling new versions of the jenkinsWorkersImageTag when running this pipeline. */
     String jenkinsWorkersImagePullPolicy     = 'IfNotPresent'
 
-    /* If true, then pull the tssc python source code and build it. tsscLibIndexUrl,
-     * tsscLibExtraIndexUrl, tsscLibVersion, and tsscLibSourceUrl are ignored if this is false.
-     */
+    /* If `true`, then pull the [TSSC library](https://rhtconsulting.github.io/tssc-python-package/)
+     * source code and build it. If `false` use the version of
+     * [TSSC library](https://rhtconsulting.github.io/tssc-python-package/) that is pre-installed
+     * in the Jenkins workers container images. If `false`, `tsscLibIndexUrl`,
+     * `tsscLibExtraIndexUrl`, `tsscLibVersion`, and `tsscLibSourceUrl` are ignored. */
     boolean updateTsscLibrary = false
 
-    /* If tsscLibSourceUrl is not supplied this will be passed to pip as --index-url
-     * for installing the 'tssc' python library and its dependicies.
+    /* If `tsscLibSourceUrl` is not supplied and `updateTsscLibrary` is `true` this will be passed
+     * to pip as `--index-url` for installing the
+     * [TSSC library](https://rhtconsulting.github.io/tssc-python-package/) and its dependencies.
      *
      * NOTE:    PIP is indeterminate whether it will pull packages from
      *          --index-url or --extra-index-url, therefor be sure to specify tsscLibVersion
@@ -49,8 +58,9 @@ class PipelineInput implements Serializable {
      * @SEE https://pip.pypa.io/en/stable/reference/pip_install/#id48 */
     String tsscLibIndexUrl  = 'https://pypi.org/simple/'
 
-    /* If tsscLibSourceUrl is not supplied this will be passed to pip as --extra-index-url
-     * for installing the 'tssc' python library and its dependicies.
+    /* If `tsscLibSourceUrl` is not supplied and `updateTsscLibrary` is `true` this will be passed
+     * to pip as `--extra-index-url` for installing the
+     * [TSSC library](https://rhtconsulting.github.io/tssc-python-package/) and its dependencies.
      *
      * NOTE:    PIP is indeterminate whether it will pull packages from
      *          --index-url or --extra-index-url, therefor be sure to specify tsscLibVersion
@@ -59,15 +69,18 @@ class PipelineInput implements Serializable {
      * @SEE https://pip.pypa.io/en/stable/reference/pip_install/#id48 */
     String tsscLibExtraIndexUrl = 'https://pypi.org/simple/'
 
-    /* If tsscLibSourceUrl is not supplied this will be passed to pip as the version
-     * of the 'tssc' library to install.
+    /* If `tsscLibSourceUrl` is not supplied and `updateTsscLibrary` is `true` this will be passed
+     * to pip as the version of the
+     * [TSSC library](https://rhtconsulting.github.io/tssc-python-package/) to install.
      *
      * NOTE:    If not given pip will install the latest from either --index-url or
      *          --extra-index-url indeterminantly */
     String tsscLibVersion   = null
 
-    /* If given this will be used as the source location to install the 'tssc' library from
-     * rather then from a PEP 503 compliant repository.
+    /* If given and `updateTsscLibrary` is `true` this will be used as the source location to
+     * install the TSSC library](https://rhtconsulting.github.io/tssc-python-package/) from rather
+     * then from a PEP 503 compliant repository. <br><br>If given then `tsscLibIndexUrl`,
+     * `tsscLibExtraIndexUrl`, and `tsscLibVersion` are ignored.
      *
      * EXAMPLE 1: git+https://github.com/rhtconsulting/tssc-python-package.git@feature/NAPSSPO-1018
      *            installs from the public 'rhtconsulting' fork from
@@ -77,10 +90,11 @@ class PipelineInput implements Serializable {
      *            installs from an internal fork of the 'tssc' library from the 'main' branch. */
     String tsscLibSourceUrl = null
 
-    /* Jenkins Credential of type 'Secret file' storing PGP key to install.
+    /* ID of Jenkins Credential of type 'Secret file' storing PGP key to install.
      *
-     * This is helpful if some of the projects configuration is encrypted with SOPS and
-     * Jenkins is expected to use a PGP key to decrypt that configuration.
+     * This PGP key will be imported so that the
+     * [TSSC library](https://rhtconsulting.github.io/tssc-python-package/) can decrypt any
+     * [SOPS](https://github.com/mozilla/sops) encrypted configuration in the given `configDir`.
      *
      * @SEE https://www.jenkins.io/doc/book/using/using-credentials/#configuring-credentials */
     String credentialIDsopsPGPKey = 'sops-pgp-key'
@@ -108,8 +122,11 @@ class PipelineInput implements Serializable {
 
     /* The UID to run the Jenkins Worker Kubernetes containers as.
      *
-     * IMPORTANT: This NEEDS be a UID that exists in the tssc-base image.
-     *            This is due to limitations of how subuid, subgid, and namespaces work.
+     * IMPORTANT:   From experimentation this NEEDS be a UID that exists in the Jenkins workers
+     *              images. This is due to limitations of how subuid, subgid, and namespaces work
+     *              and their appropriate ranges not being created for random UID is not created
+     *              with `useradd` and how that interacts with `buildah unshare` for rootless
+     *              container builds within a container.
      *
      * NOTE: The quay.io/tssc/tssc-base image uses UID 1001 but if you don't like that UID
      *       then you can use https://github.com/rhtconsulting/tssc-containers to create custom
