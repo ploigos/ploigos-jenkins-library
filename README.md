@@ -1,7 +1,6 @@
-# TSSC Jenkins Library
+# Ploigos Jenkins Library
 
-Library of Jenkins domain specific language implementation of the
-[TSSC workflow](https://rhtconsulting.github.io/tsc-docs/#tssc-workflow-assembly-tssc).
+Library of Jenkins domain specific language implementation of the Ploigos workflows.
 
 # Use
 
