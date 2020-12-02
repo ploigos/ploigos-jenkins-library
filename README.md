@@ -203,7 +203,7 @@ ploigosWorkflowStandard(
     workflowWorkerImageContainerImageStaticComplianceScan: 'ploigos/ploigos-tool-openscap:v1.0.0',
     workflowWorkerImageContainerImageStaticVulnerabilityScan: 'ploigos/ploigos-tool-openscap:v1.0.0',
     workflowWorkerImageDeploy: 'ploigos/ploigos-tool-argocd:v1.0.0',
-    workflowWorkerImageValidateEnvironmentConfiguraiton: 'ploigos/ploigos-tool-config-lint:v1.0.0',
+    workflowWorkerImageValidateEnvironmentConfiguration: 'ploigos/ploigos-tool-config-lint:v1.0.0',
     workflowWorkerImageUAT: 'ploigos/ploigos-tool-maven:v1.0.0'
 )
 ```
@@ -236,7 +236,7 @@ ploigosWorkflowStandard(
     workflowWorkerImageContainerImageStaticComplianceScan: 'ploigos/ploigos-tool-openscap:v1.0.0',
     workflowWorkerImageContainerImageStaticVulnerabilityScan: 'ploigos/ploigos-tool-openscap:v1.0.0',
     workflowWorkerImageDeploy: 'ploigos/ploigos-tool-argocd:v1.0.0',
-    workflowWorkerImageValidateEnvironmentConfiguraiton: 'ploigos/ploigos-tool-config-lint:v1.0.0',
+    workflowWorkerImageValidateEnvironmentConfiguration: 'ploigos/ploigos-tool-config-lint:v1.0.0',
     workflowWorkerImageUAT: 'ploigos/ploigos-tool-maven:v1.0.0',
 
     stepRunnerUpdateLibrary: true,
