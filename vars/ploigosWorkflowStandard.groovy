@@ -198,6 +198,10 @@ class WorkflowParams implements Serializable {
      *       seLinuxContext:
      *       type: MustRunAsm */
     String workflowServiceAccountName = 'jenkins'
+
+    /* TODO doc me
+     */
+    String trustedCABundleConfigMapName = 'trusted-cabundle'
 }
 
 // Java Backend Reference Jenkinsfile
@@ -273,6 +277,9 @@ def call(Map paramsMap) {
             name: home-ploigos
           - mountPath: /var/pgp-private-keys
             name: pgp-private-keys
+          - name: trusted-ca
+            mountPath: /etc/pki/ca-trust/source/anchors
+            readOnly: true
         - name: ${WORKFLOW_WORKER_NAME_UNIT_TEST}
           image: "${params.workflowWorkerImageUnitTest}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
@@ -281,6 +288,9 @@ def call(Map paramsMap) {
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
+          - name: trusted-ca
+            mountPath: /etc/pki/ca-trust/source/anchors
+            readOnly: true
         - name: ${WORKFLOW_WORKER_NAME_PACKAGE}
           image: "${params.workflowWorkerImagePackage}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
@@ -289,6 +299,9 @@ def call(Map paramsMap) {
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
+          - name: trusted-ca
+            mountPath: /etc/pki/ca-trust/source/anchors
+            readOnly: true
         - name: ${WORKFLOW_WORKER_NAME_STATIC_CODE_ANALYSIS}
           image: "${params.workflowWorkerImageStaticCodeAnalysis}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
@@ -297,6 +310,9 @@ def call(Map paramsMap) {
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
+          - name: trusted-ca
+            mountPath: /etc/pki/ca-trust/source/anchors
+            readOnly: true
         - name: ${WORKFLOW_WORKER_NAME_PUSH_ARTIFACTS}
           image: "${params.workflowWorkerImagePushArtifacts}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
@@ -305,6 +321,9 @@ def call(Map paramsMap) {
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
+          - name: trusted-ca
+            mountPath: /etc/pki/ca-trust/source/anchors
+            readOnly: true
         - name: ${WORKFLOW_WORKER_NAME_CONTAINER_OPERATIONS}
           image: "${params.workflowWorkerImageContainerOperations}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
@@ -313,6 +332,9 @@ def call(Map paramsMap) {
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
+          - name: trusted-ca
+            mountPath: /etc/pki/ca-trust/source/anchors
+            readOnly: true
         - name: ${WORKFLOW_WORKER_NAME_CONTAINER_IMAGE_STATIC_COMPLIANCE_SCAN}
           image: "${params.workflowWorkerImageContainerImageStaticComplianceScan}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
@@ -321,6 +343,9 @@ def call(Map paramsMap) {
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
+          - name: trusted-ca
+            mountPath: /etc/pki/ca-trust/source/anchors
+            readOnly: true
         - name: ${WORKFLOW_WORKER_NAME_CONTAINER_IMAGE_STATIC_VULNERABILITY_SCAN}
           image: "${params.workflowWorkerImageContainerImageStaticVulnerabilityScan}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
@@ -329,6 +354,9 @@ def call(Map paramsMap) {
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
+          - name: trusted-ca
+            mountPath: /etc/pki/ca-trust/source/anchors
+            readOnly: true
         - name: ${WORKFLOW_WORKER_NAME_DEPLOY}
           image: "${params.workflowWorkerImageDeploy}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
@@ -337,6 +365,9 @@ def call(Map paramsMap) {
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
+          - name: trusted-ca
+            mountPath: /etc/pki/ca-trust/source/anchors
+            readOnly: true
         - name: ${WORKFLOW_WORKER_NAME_VALIDATE_ENVIRONMENT_CONFIGURATION}
           image: "${params.workflowWorkerImageValidateEnvironmentConfiguration}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
@@ -345,6 +376,9 @@ def call(Map paramsMap) {
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
+          - name: trusted-ca
+            mountPath: /etc/pki/ca-trust/source/anchors
+            readOnly: true
         - name: ${WORKFLOW_WORKER_NAME_UAT}
           image: "${params.workflowWorkerImageUAT}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
@@ -353,12 +387,21 @@ def call(Map paramsMap) {
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
+          - name: trusted-ca
+            mountPath: /etc/pki/ca-trust/source/anchors
+            readOnly: true
         volumes:
         - name: home-ploigos
           emptyDir: {}
         - name: pgp-private-keys
           secret:
             secretName: ${params.pgpKeysSecretName}
+        - name: trusted-ca
+          configMap:
+            name: ${params.trustedCABundleConfigMapName}
+            items:
+            - key: ca-bundle.crt
+              path: tls-ca-bundle.pem
     """
             }
         }
@@ -532,6 +575,7 @@ def call(Map paramsMap) {
                     }
                     stage('CI: Static Code Analysis') {
                         steps {
+                            input "continue?"
                             container("${WORKFLOW_WORKER_NAME_STATIC_CODE_ANALYSIS}") {
                                 sh """
                                     if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
