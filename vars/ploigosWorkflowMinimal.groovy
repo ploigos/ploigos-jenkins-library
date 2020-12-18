@@ -42,7 +42,7 @@ class WorkflowParams implements Serializable {
     String[] releaseGitRefPatterns = ['^main$']
 
     /* Name of the python package to use as the Workflow Step Runner. */
-    String stepRunnerPackageName = 'tssc'
+    String stepRunnerPackageName = 'ploigos-step-runner'
 
     /* If 'true', then pull the Workflow Step Runner library source code and build it.
      * If 'false', use the version of the Workflow Step Runner library that is pre-installed
@@ -92,7 +92,7 @@ class WorkflowParams implements Serializable {
      * ----
      * If not given pip will install the latest from either 'stepRunnerLibIndexUrl' or
      * 'stepRunnerLibExtraIndexUrl' indeterminately. */
-    String stepRunnerLibVersion = null
+    String stepRunnerLibVersion = ""
 
     /* If none empty value given and 'stepRunnerUpdateLibrary' is true this will be used as the source
      * location to install the Workflow Step Runner library from rather then from a PEP 503 compliant
@@ -110,7 +110,7 @@ class WorkflowParams implements Serializable {
      *
      * git+https://gitea.internal.example.xyz/tools/ploigos-step-runner.git@main
      * installs from an internal fork of the step runner library from the 'main' branch. */
-    String stepRunnerLibSourceUrl = null
+    String stepRunnerLibSourceUrl = ""
 
     /* The UID to run the workflow worker containers as.
      *
@@ -325,7 +325,7 @@ def call(Map paramsMap) {
                                     sh '''
                                         #!/bin/sh
                                         if [ "${VERBOSE}" == "true" ]; then set -x; else set +x; fi
-                                        set -eu -o pipefail
+                                        set -e -o pipefail
 
                                         if [[ ${UPDATE_STEP_RUNNER_LIBRARY} =~ true|True ]]; then
                                             echo "*********************"
@@ -336,24 +336,24 @@ def call(Map paramsMap) {
                                             python -m pip install --upgrade pip
 
                                             if [[ ${STEP_RUNNER_LIB_SOURCE_URL} ]]; then
-                                            STEP_RUNNER_LIB_INSTALL_CMD="python -m pip install --upgrade ${STEP_RUNNER_LIB_SOURCE_URL}"
+                                                STEP_RUNNER_LIB_INSTALL_CMD="python -m pip install --upgrade ${STEP_RUNNER_LIB_SOURCE_URL}"
                                             else
-                                            indexUrlFlag=""
+                                                indexUrlFlag=""
 
-                                            if [[ ${STEP_RUNNER_LIB_INDEX_URL} ]]; then
-                                                indexUrlFlag="--index-url ${STEP_RUNNER_LIB_INDEX_URL}"
-                                            fi
+                                                if [[ ${STEP_RUNNER_LIB_INDEX_URL} ]]; then
+                                                    indexUrlFlag="--index-url ${STEP_RUNNER_LIB_INDEX_URL}"
+                                                fi
 
-                                            extraIndexUrlFlag=""
-                                            if [[ ${STEP_RUNNER_LIB_EXTRA_INDEX_URL} ]]; then
-                                                extraIndexUrlFlag="--extra-index-url  ${STEP_RUNNER_LIB_EXTRA_INDEX_URL}"
-                                            fi
+                                                extraIndexUrlFlag=""
+                                                if [[ ${STEP_RUNNER_LIB_EXTRA_INDEX_URL} ]]; then
+                                                    extraIndexUrlFlag="--extra-index-url  ${STEP_RUNNER_LIB_EXTRA_INDEX_URL}"
+                                                fi
 
-                                            STEP_RUNNER_LIB_INSTALL_CMD="python -m pip install --upgrade ${STEP_RUNNER_LIB_INDEX_URL} ${STEP_RUNNER_LIB_EXTRA_INDEX_URL} ${STEP_RUNNER_PACKAGE_NAME}"
+                                                STEP_RUNNER_LIB_INSTALL_CMD="python -m pip install --upgrade ${indexUrlFlag} ${extraIndexUrlFlag} ${STEP_RUNNER_PACKAGE_NAME}"
 
-                                            if [[ ${STEP_RUNNER_LIB_VERSION} ]]; then
-                                                STEP_RUNNER_LIB_INSTALL_CMD+="==${STEP_RUNNER_LIB_VERSION}"
-                                            fi
+                                                if [[ ${STEP_RUNNER_LIB_VERSION} ]]; then
+                                                    STEP_RUNNER_LIB_INSTALL_CMD+="==${STEP_RUNNER_LIB_VERSION}"
+                                                fi
                                             fi
 
                                             echo "*************************************"
@@ -400,7 +400,7 @@ def call(Map paramsMap) {
                                     set -eu -o pipefail
 
                                     source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
-                                    python -m tssc \
+                                    psr \
                                         --config ${params.stepRunnerConfigDir} \
                                         --step generate-metadata
                                 """
@@ -415,7 +415,7 @@ def call(Map paramsMap) {
                                     set -eu -o pipefail
 
                                     source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
-                                    python -m tssc \
+                                    psr \
                                         --config ${params.stepRunnerConfigDir} \
                                         --step tag-source
                                 """
@@ -430,7 +430,7 @@ def call(Map paramsMap) {
                                     set -eu -o pipefail
 
                                     source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
-                                    python -m tssc \
+                                    psr \
                                         --config ${params.stepRunnerConfigDir} \
                                         --step package
                                 """
@@ -445,7 +445,7 @@ def call(Map paramsMap) {
                                     set -eu -o pipefail
 
                                     source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
-                                    python -m tssc \
+                                    psr \
                                         --config ${params.stepRunnerConfigDir} \
                                         --step push-artifacts
                                 """
@@ -460,7 +460,7 @@ def call(Map paramsMap) {
                                     set -eu -o pipefail
 
                                     source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
-                                    python -m tssc \
+                                    psr \
                                         --config ${params.stepRunnerConfigDir} \
                                         --step create-container-image
                                 """
@@ -475,7 +475,7 @@ def call(Map paramsMap) {
                                     set -eu -o pipefail
 
                                     source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
-                                    python -m tssc \
+                                    psr \
                                         --config ${params.stepRunnerConfigDir} \
                                         --step push-container-image
                                 """
@@ -509,7 +509,7 @@ def call(Map paramsMap) {
                                     set -eu -o pipefail
 
                                     source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
-                                    python -m tssc \
+                                    psr \
                                         --config ${params.stepRunnerConfigDir} \
                                         --step deploy \
                                         --environment ${params.envNameDev}
@@ -544,7 +544,7 @@ def call(Map paramsMap) {
                                     set -eu -o pipefail
 
                                     source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
-                                    python -m tssc \
+                                    psr \
                                         --config ${params.stepRunnerConfigDir} \
                                         --step deploy \
                                         --environment ${params.envNameTest}
@@ -579,7 +579,7 @@ def call(Map paramsMap) {
                                     set -eu -o pipefail
 
                                     source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
-                                    python -m tssc \
+                                    psr \
                                         --config ${params.stepRunnerConfigDir} \
                                         --step deploy \
                                         --environment ${params.envNameProd}
