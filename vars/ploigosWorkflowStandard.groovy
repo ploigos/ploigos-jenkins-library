@@ -198,6 +198,8 @@ class WorkflowParams implements Serializable {
      *       seLinuxContext:
      *       type: MustRunAsm */
     String workflowServiceAccountName = 'jenkins'
+
+    boolean separatePlatformConfig = false
 }
 
 // Java Backend Reference Jenkinsfile
@@ -243,6 +245,24 @@ def call(Map paramsMap) {
     /* Name of the virtual environment to set up in the given home worksapce. */
     String WORKFLOW_WORKER_VENV_NAME = 'venv-ploigos'
 
+    String PLATFORM_MOUNTS = params.separatePlatformConfig ? """
+          - mountPath: ''/tssc-config.yml
+            name: tssc-config
+            subPath: tssc-config.yml
+          - mountPath: ''/tssc-config-secrets.yml
+            name: tssc-config-secrets
+            subPath: tssc-config-secrets.yml
+    """ : ""
+
+    String PLATFORM_VOLUMES = params.separatePlatformConfig ? """
+        - name: tssc-config
+          configMap:
+            name: tssc-config
+        - name: tssc-config-secrets
+          secret:
+            secretName: tssc-config-secrets
+    """ : ""
+
     pipeline {
         options {
             ansiColor('xterm')
@@ -281,6 +301,7 @@ def call(Map paramsMap) {
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
+          ${PLATFORM_MOUNTS}
         - name: ${WORKFLOW_WORKER_NAME_PACKAGE}
           image: "${params.workflowWorkerImagePackage}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
@@ -289,6 +310,7 @@ def call(Map paramsMap) {
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
+          ${PLATFORM_MOUNTS}
         - name: ${WORKFLOW_WORKER_NAME_STATIC_CODE_ANALYSIS}
           image: "${params.workflowWorkerImageStaticCodeAnalysis}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
@@ -297,6 +319,7 @@ def call(Map paramsMap) {
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
+          ${PLATFORM_MOUNTS}
         - name: ${WORKFLOW_WORKER_NAME_PUSH_ARTIFACTS}
           image: "${params.workflowWorkerImagePushArtifacts}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
@@ -305,6 +328,7 @@ def call(Map paramsMap) {
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
+          ${PLATFORM_MOUNTS}
         - name: ${WORKFLOW_WORKER_NAME_CONTAINER_OPERATIONS}
           image: "${params.workflowWorkerImageContainerOperations}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
@@ -313,6 +337,7 @@ def call(Map paramsMap) {
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
+          ${PLATFORM_MOUNTS}
         - name: ${WORKFLOW_WORKER_NAME_CONTAINER_IMAGE_STATIC_COMPLIANCE_SCAN}
           image: "${params.workflowWorkerImageContainerImageStaticComplianceScan}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
@@ -321,6 +346,7 @@ def call(Map paramsMap) {
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
+          ${PLATFORM_MOUNTS}
         - name: ${WORKFLOW_WORKER_NAME_CONTAINER_IMAGE_STATIC_VULNERABILITY_SCAN}
           image: "${params.workflowWorkerImageContainerImageStaticVulnerabilityScan}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
@@ -329,6 +355,7 @@ def call(Map paramsMap) {
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
+          ${PLATFORM_MOUNTS}
         - name: ${WORKFLOW_WORKER_NAME_DEPLOY}
           image: "${params.workflowWorkerImageDeploy}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
@@ -337,6 +364,7 @@ def call(Map paramsMap) {
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
+          ${PLATFORM_MOUNTS}
         - name: ${WORKFLOW_WORKER_NAME_VALIDATE_ENVIRONMENT_CONFIGURATION}
           image: "${params.workflowWorkerImageValidateEnvironmentConfiguration}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
@@ -345,6 +373,7 @@ def call(Map paramsMap) {
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
+          ${PLATFORM_MOUNTS}
         - name: ${WORKFLOW_WORKER_NAME_UAT}
           image: "${params.workflowWorkerImageUAT}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
@@ -353,12 +382,14 @@ def call(Map paramsMap) {
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
+          ${PLATFORM_MOUNTS}
         volumes:
         - name: home-ploigos
           emptyDir: {}
         - name: pgp-private-keys
           secret:
             secretName: ${params.pgpKeysSecretName}
+        ${PLATFORM_VOLUMES}
     """
             }
         }
