@@ -245,11 +245,13 @@ def call(Map paramsMap) {
     /* Name of the virtual environment to set up in the given home worksapce. */
     String WORKFLOW_WORKER_VENV_NAME = 'venv-ploigos'
 
+    String PLATFORM_CONFIG_DIR = "/opt/platform-config"
+
     String PLATFORM_MOUNTS = params.separatePlatformConfig ? """
-          - mountPath: ''/tssc-config.yml
+          - mountPath: ${PLATFORM_CONFIG_DIR}/tssc-config.yml
             name: tssc-config
             subPath: tssc-config.yml
-          - mountPath: ''/tssc-config-secrets.yml
+          - mountPath: ${PLATFORM_CONFIG_DIR}/tssc-config-secrets.yml
             name: tssc-config-secrets
             subPath: tssc-config-secrets.yml
     """ : ""
@@ -262,6 +264,9 @@ def call(Map paramsMap) {
           secret:
             secretName: tssc-config-secrets
     """ : ""
+
+    String PSR_CONFIG_ARG = params.separatePlatformConfig ? 
+        "${PLATFORM_CONFIG_DIR} ${params.stepRunnerConfigDir}" : "${params.stepRunnerConfigDir}"
 
     pipeline {
         options {
@@ -293,6 +298,7 @@ def call(Map paramsMap) {
             name: home-ploigos
           - mountPath: /var/pgp-private-keys
             name: pgp-private-keys
+          ${PLATFORM_MOUNTS}
         - name: ${WORKFLOW_WORKER_NAME_UNIT_TEST}
           image: "${params.workflowWorkerImageUnitTest}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
@@ -510,7 +516,7 @@ def call(Map paramsMap) {
 
                                     source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
                                     psr \
-                                        --config ${params.stepRunnerConfigDir} \
+                                        --config ${PSR_CONFIG_ARG} \
                                         --step generate-metadata
                                 """
                             }
@@ -525,7 +531,7 @@ def call(Map paramsMap) {
 
                                     source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
                                     psr \
-                                        --config ${params.stepRunnerConfigDir} \
+                                        --config ${PSR_CONFIG_ARG} \
                                         --step tag-source
                                 """
                             }
@@ -540,7 +546,7 @@ def call(Map paramsMap) {
 
                                     source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
                                     psr \
-                                        --config ${params.stepRunnerConfigDir} \
+                                        --config ${PSR_CONFIG_ARG} \
                                         --step unit-test
                                 """
                             }
@@ -555,7 +561,7 @@ def call(Map paramsMap) {
 
                                     source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
                                     psr \
-                                        --config ${params.stepRunnerConfigDir} \
+                                        --config ${PSR_CONFIG_ARG} \
                                         --step package
                                 """
                             }
@@ -570,7 +576,7 @@ def call(Map paramsMap) {
 
                                     source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
                                     psr \
-                                        --config ${params.stepRunnerConfigDir} \
+                                        --config ${PSR_CONFIG_ARG} \
                                         --step static-code-analysis
                                 """
                             }
@@ -585,7 +591,7 @@ def call(Map paramsMap) {
 
                                     source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
                                     psr \
-                                        --config ${params.stepRunnerConfigDir} \
+                                        --config ${PSR_CONFIG_ARG} \
                                         --step push-artifacts
                                 """
                             }
@@ -600,7 +606,7 @@ def call(Map paramsMap) {
 
                                     source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
                                     psr \
-                                        --config ${params.stepRunnerConfigDir} \
+                                        --config ${PSR_CONFIG_ARG} \
                                         --step create-container-image
                                 """
                             }
@@ -617,7 +623,7 @@ def call(Map paramsMap) {
 
                                             source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
                                             psr \
-                                                --config ${params.stepRunnerConfigDir} \
+                                                --config ${PSR_CONFIG_ARG} \
                                                 --step container-image-static-compliance-scan
                                         """
                                     }
@@ -632,7 +638,7 @@ def call(Map paramsMap) {
 
                                             source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
                                             psr \
-                                                --config ${params.stepRunnerConfigDir} \
+                                                --config ${PSR_CONFIG_ARG} \
                                                 --step container-image-static-vulnerability-scan
                                         """
                                     }
@@ -649,7 +655,7 @@ def call(Map paramsMap) {
 
                                     source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
                                     psr \
-                                        --config ${params.stepRunnerConfigDir} \
+                                        --config ${PSR_CONFIG_ARG} \
                                         --step push-container-image
                                 """
                             }
@@ -664,7 +670,7 @@ def call(Map paramsMap) {
 
                                     source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
                                     psr \
-                                        --config ${params.stepRunnerConfigDir} \
+                                        --config ${PSR_CONFIG_ARG} \
                                         --step sign-container-image
                                 """
                             }
@@ -698,7 +704,7 @@ def call(Map paramsMap) {
 
                                     source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
                                     psr \
-                                        --config ${params.stepRunnerConfigDir} \
+                                        --config ${PSR_CONFIG_ARG} \
                                         --step deploy \
                                         --environment ${params.envNameDev}
                                 """
@@ -714,7 +720,7 @@ def call(Map paramsMap) {
 
                                     source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
                                     psr \
-                                        --config ${params.stepRunnerConfigDir} \
+                                        --config ${PSR_CONFIG_ARG} \
                                         --step validate-environment-configuration \
                                         --environment ${params.envNameDev}
                                 """
@@ -730,7 +736,7 @@ def call(Map paramsMap) {
 
                                     source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
                                     psr \
-                                        --config ${params.stepRunnerConfigDir} \
+                                        --config ${PSR_CONFIG_ARG} \
                                         --step uat \
                                         --environment ${params.envNameDev}
                                 """
@@ -765,7 +771,7 @@ def call(Map paramsMap) {
 
                                     source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
                                     psr \
-                                        --config ${params.stepRunnerConfigDir} \
+                                        --config ${PSR_CONFIG_ARG} \
                                         --step deploy \
                                         --environment ${params.envNameTest}
                                     """
@@ -781,7 +787,7 @@ def call(Map paramsMap) {
 
                                     source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
                                     psr \
-                                        --config ${params.stepRunnerConfigDir} \
+                                        --config ${PSR_CONFIG_ARG} \
                                         --step validate-environment-configuration \
                                         --environment ${params.envNameTest}
                                 """
@@ -797,7 +803,7 @@ def call(Map paramsMap) {
 
                                     source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
                                     psr \
-                                        --config ${params.stepRunnerConfigDir} \
+                                        --config ${PSR_CONFIG_ARG} \
                                         --step uat \
                                         --environment ${params.envNameTest}
                                 """
@@ -832,7 +838,7 @@ def call(Map paramsMap) {
 
                                     source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
                                     psr \
-                                        --config ${params.stepRunnerConfigDir} \
+                                        --config ${PSR_CONFIG_ARG} \
                                         --step deploy \
                                         --environment ${params.envNameProd}
                                 """
@@ -848,7 +854,7 @@ def call(Map paramsMap) {
 
                                     source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
                                     psr \
-                                        --config ${params.stepRunnerConfigDir} \
+                                        --config ${PSR_CONFIG_ARG} \
                                         --step validate-environment-configuration \
                                         --environment ${params.envNameProd}
                                 """
