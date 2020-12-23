@@ -199,6 +199,11 @@ class WorkflowParams implements Serializable {
      *       type: MustRunAsm */
     String workflowServiceAccountName = 'jenkins'
 
+    /* Flag indicating that platform-level configuration is separated from 
+     * app-level configuration, instead provided by way of the following Kubernetes 
+     * objects, which are mounted into the agent Pod:
+     *  - A ConfigMap named ploigos-platform-config
+     *  - A Secret named ploigos-platform-config-secrets */
     boolean separatePlatformConfig = false
 }
 
@@ -245,26 +250,30 @@ def call(Map paramsMap) {
     /* Name of the virtual environment to set up in the given home worksapce. */
     String WORKFLOW_WORKER_VENV_NAME = 'venv-ploigos'
 
+    /* Directory into which platform configuration is mounted, if applicable */
     String PLATFORM_CONFIG_DIR = "/opt/platform-config"
 
+    /* Additional mounts for agent containers, if separatePlatformConfig == true */
     String PLATFORM_MOUNTS = params.separatePlatformConfig ? """
-          - mountPath: ${PLATFORM_CONFIG_DIR}/tssc-config.yml
-            name: tssc-config
-            subPath: tssc-config.yml
-          - mountPath: ${PLATFORM_CONFIG_DIR}/tssc-config-secrets.yml
-            name: tssc-config-secrets
-            subPath: tssc-config-secrets.yml
+          - mountPath: ${PLATFORM_CONFIG_DIR}/config.yml
+            name: ploigos-platform-config
+            subPath: config.yml
+          - mountPath: ${PLATFORM_CONFIG_DIR}/config-secrets.yml
+            name: ploigos-platform-config-secrets
+            subPath: config-secrets.yml
     """ : ""
 
+    /* Additional volumes for the agent Pod, if separatePlatformConfig == true */
     String PLATFORM_VOLUMES = params.separatePlatformConfig ? """
-        - name: tssc-config
+        - name: ploigos-platform-config
           configMap:
-            name: tssc-config
-        - name: tssc-config-secrets
+            name: ploigos-platform-config
+        - name: ploigos-platform-config-secrets
           secret:
-            secretName: tssc-config-secrets
+            secretName: ploigos-platform-config-secrets
     """ : ""
 
+    /* Combine this app's local config with platform-level config, if separatePlatformConfig == true */ 
     String PSR_CONFIG_ARG = params.separatePlatformConfig ? 
         "${PLATFORM_CONFIG_DIR} ${params.stepRunnerConfigDir}" : "${params.stepRunnerConfigDir}"
 
