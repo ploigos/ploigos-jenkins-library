@@ -174,6 +174,13 @@ class WorkflowParams implements Serializable {
      *       seLinuxContext:
      *       type: MustRunAsm */
     String workflowServiceAccountName = 'jenkins'
+
+    /* Flag indicating that platform-level configuration is separated from 
+     * app-level configuration, instead provided by way of the following Kubernetes 
+     * objects, which are mounted into the agent Pod:
+     *  - A ConfigMap named ploigos-platform-config
+     *  - A Secret named ploigos-platform-config-secrets */
+    boolean separatePlatformConfig = false
 }
 
 // Java Backend Reference Jenkinsfile
@@ -213,6 +220,33 @@ def call(Map paramsMap) {
     /* Name of the virtual environment to set up in the given home worksapce. */
     String WORKFLOW_WORKER_VENV_NAME = 'venv-ploigos'
 
+    /* Directory into which platform configuration is mounted, if applicable */
+    String PLATFORM_CONFIG_DIR = "/opt/platform-config"
+
+    /* Additional mounts for agent containers, if separatePlatformConfig == true */
+    String PLATFORM_MOUNTS = params.separatePlatformConfig ? """
+          - mountPath: ${PLATFORM_CONFIG_DIR}/config.yml
+            name: ploigos-platform-config
+            subPath: config.yml
+          - mountPath: ${PLATFORM_CONFIG_DIR}/config-secrets.yml
+            name: ploigos-platform-config-secrets
+            subPath: config-secrets.yml
+    """ : ""
+
+    /* Additional volumes for the agent Pod, if separatePlatformConfig == true */
+    String PLATFORM_VOLUMES = params.separatePlatformConfig ? """
+        - name: ploigos-platform-config
+          configMap:
+            name: ploigos-platform-config
+        - name: ploigos-platform-config-secrets
+          secret:
+            secretName: ploigos-platform-config-secrets
+    """ : ""
+
+    /* Combine this app's local config with platform-level config, if separatePlatformConfig == true */ 
+    String PSR_CONFIG_ARG = params.separatePlatformConfig ? 
+        "${PLATFORM_CONFIG_DIR} ${params.stepRunnerConfigDir}" : "${params.stepRunnerConfigDir}"
+
     pipeline {
         options {
             ansiColor('xterm')
@@ -243,6 +277,7 @@ def call(Map paramsMap) {
             name: home-ploigos
           - mountPath: /var/pgp-private-keys
             name: pgp-private-keys
+          ${PLATFORM_MOUNTS}
         - name: ${WORKFLOW_WORKER_NAME_PACKAGE}
           image: "${params.workflowWorkerImagePackage}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
@@ -251,6 +286,7 @@ def call(Map paramsMap) {
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
+          ${PLATFORM_MOUNTS}
         - name: ${WORKFLOW_WORKER_NAME_PUSH_ARTIFACTS}
           image: "${params.workflowWorkerImagePushArtifacts}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
@@ -259,6 +295,7 @@ def call(Map paramsMap) {
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
+          ${PLATFORM_MOUNTS}
         - name: ${WORKFLOW_WORKER_NAME_CONTAINER_OPERATIONS}
           image: "${params.workflowWorkerImageContainerOperations}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
@@ -267,6 +304,7 @@ def call(Map paramsMap) {
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
+          ${PLATFORM_MOUNTS}
         - name: ${WORKFLOW_WORKER_NAME_DEPLOY}
           image: "${params.workflowWorkerImageDeploy}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
@@ -275,12 +313,14 @@ def call(Map paramsMap) {
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
+          ${PLATFORM_MOUNTS}
         volumes:
         - name: home-ploigos
           emptyDir: {}
         - name: pgp-private-keys
           secret:
             secretName: ${params.pgpKeysSecretName}
+        ${PLATFORM_VOLUMES}
     """
             }
         }
@@ -401,7 +441,7 @@ def call(Map paramsMap) {
 
                                     source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
                                     psr \
-                                        --config ${params.stepRunnerConfigDir} \
+                                        --config ${PSR_CONFIG_ARG} \
                                         --step generate-metadata
                                 """
                             }
@@ -416,7 +456,7 @@ def call(Map paramsMap) {
 
                                     source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
                                     psr \
-                                        --config ${params.stepRunnerConfigDir} \
+                                        --config ${PSR_CONFIG_ARG} \
                                         --step tag-source
                                 """
                             }
@@ -431,7 +471,7 @@ def call(Map paramsMap) {
 
                                     source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
                                     psr \
-                                        --config ${params.stepRunnerConfigDir} \
+                                        --config ${PSR_CONFIG_ARG} \
                                         --step package
                                 """
                             }
@@ -446,7 +486,7 @@ def call(Map paramsMap) {
 
                                     source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
                                     psr \
-                                        --config ${params.stepRunnerConfigDir} \
+                                        --config ${PSR_CONFIG_ARG} \
                                         --step push-artifacts
                                 """
                             }
@@ -461,7 +501,7 @@ def call(Map paramsMap) {
 
                                     source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
                                     psr \
-                                        --config ${params.stepRunnerConfigDir} \
+                                        --config ${PSR_CONFIG_ARG} \
                                         --step create-container-image
                                 """
                             }
@@ -476,7 +516,7 @@ def call(Map paramsMap) {
 
                                     source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
                                     psr \
-                                        --config ${params.stepRunnerConfigDir} \
+                                        --config ${PSR_CONFIG_ARG} \
                                         --step push-container-image
                                 """
                             }
@@ -510,7 +550,7 @@ def call(Map paramsMap) {
 
                                     source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
                                     psr \
-                                        --config ${params.stepRunnerConfigDir} \
+                                        --config ${PSR_CONFIG_ARG} \
                                         --step deploy \
                                         --environment ${params.envNameDev}
                                 """
@@ -545,7 +585,7 @@ def call(Map paramsMap) {
 
                                     source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
                                     psr \
-                                        --config ${params.stepRunnerConfigDir} \
+                                        --config ${PSR_CONFIG_ARG} \
                                         --step deploy \
                                         --environment ${params.envNameTest}
                                     """
@@ -580,7 +620,7 @@ def call(Map paramsMap) {
 
                                     source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
                                     psr \
-                                        --config ${params.stepRunnerConfigDir} \
+                                        --config ${PSR_CONFIG_ARG} \
                                         --step deploy \
                                         --environment ${params.envNameProd}
                                 """
