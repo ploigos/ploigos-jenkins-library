@@ -199,8 +199,8 @@ class WorkflowParams implements Serializable {
      *       type: MustRunAsm */
     String workflowServiceAccountName = 'jenkins'
 
-    /* Flag indicating that platform-level configuration is separated from 
-     * app-level configuration, instead provided by way of the following Kubernetes 
+    /* Flag indicating that platform-level configuration is separated from
+     * app-level configuration, instead provided by way of the following Kubernetes
      * objects, which are mounted into the agent Pod:
      *  - A ConfigMap named ploigos-platform-config
      *  - A Secret named ploigos-platform-config-secrets */
@@ -273,8 +273,8 @@ def call(Map paramsMap) {
             secretName: ploigos-platform-config-secrets
     """ : ""
 
-    /* Combine this app's local config with platform-level config, if separatePlatformConfig == true */ 
-    String PSR_CONFIG_ARG = params.separatePlatformConfig ? 
+    /* Combine this app's local config with platform-level config, if separatePlatformConfig == true */
+    String PSR_CONFIG_ARG = params.separatePlatformConfig ?
         "${PLATFORM_CONFIG_DIR} ${params.stepRunnerConfigDir}" : "${params.stepRunnerConfigDir}"
 
     pipeline {
@@ -412,7 +412,7 @@ def call(Map paramsMap) {
         stages {
             stage('SETUP') {
                 parallel {
-                    stage('SETUP: Python venv') {
+                    stage('SETUP: Workflow Step Runner') {
                         environment {
                             UPDATE_STEP_RUNNER_LIBRARY      = "${params.stepRunnerUpdateLibrary}"
                             STEP_RUNNER_LIB_SOURCE_URL      = "${params.stepRunnerLibSourceUrl}"
@@ -591,7 +591,7 @@ def call(Map paramsMap) {
                             }
                         }
                     }
-                    stage('CI: Push Artifacts to Repository') {
+                    stage('CI: Push Application to Repository') {
                         steps {
                             container("${WORKFLOW_WORKER_NAME_PUSH_ARTIFACTS}") {
                                 sh """
@@ -655,7 +655,7 @@ def call(Map paramsMap) {
                             }
                         }
                     }
-                    stage('CI: Push Trusted Container Image to Repository') {
+                    stage('CI: Push Container Image to Repository') {
                         steps {
                             container("${WORKFLOW_WORKER_NAME_CONTAINER_OPERATIONS}") {
                                 sh """
@@ -670,7 +670,7 @@ def call(Map paramsMap) {
                             }
                         }
                     }
-                    stage('CI: Sign Trusted Container Image') {
+                    stage('CI: Sign Container Image') {
                         steps {
                             container("${WORKFLOW_WORKER_NAME_CONTAINER_OPERATIONS}") {
                                 sh """
