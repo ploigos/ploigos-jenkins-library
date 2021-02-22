@@ -181,6 +181,23 @@ class WorkflowParams implements Serializable {
      *  - A ConfigMap named ploigos-platform-config
      *  - A Secret named ploigos-platform-config-secrets */
     boolean separatePlatformConfig = false
+
+    /*
+    Flag for utilizing a CA Bundle
+    */
+    String trustedCABundleConfig = true
+
+    /*
+	Variable for setting the name of the ConfigMap that is created to
+        pass the additional CAs into the Containers that Jenkins uses as Agents
+    */
+    String trustedCABundleConfigMapName = 'trustedcabundle'
+
+    /*
+    Variable for setting toggling SSL Cert Verification in Git during the
+        Pip Install of Step Runner. Set to 'true' for skipping cert verification.
+    */
+    String gitTlsNoVerify = false
 }
 
 // Java Backend Reference Jenkinsfile
@@ -243,6 +260,23 @@ def call(Map paramsMap) {
             secretName: ploigos-platform-config-secrets
     """ : ""
 
+    /* Additional mount for agent containers, if trustedCaConfig == true */
+    String TLS_MOUNTS = params.trustedCABundleConfig ? """
+          - name: trusted-ca
+            mountPath: /etc/pki/ca-trust/source/anchors
+            readOnly: true
+    """ : ""
+
+    /* Additional volume for agent containers, if trustedCaConfig == true */
+    String TLS_VOLUMES = params.trustedCABundleConfig ? """
+        - name: trusted-ca
+          configMap:
+            name: ${params.trustedCABundleConfigMapName}
+            items:
+            - key: ca-bundle.crt
+              path: tls-ca-bundle.pem
+    """ : ""
+
     /* Combine this app's local config with platform-level config, if separatePlatformConfig == true */
     String PSR_CONFIG_ARG = params.separatePlatformConfig ?
         "${PLATFORM_CONFIG_DIR} ${params.stepRunnerConfigDir}" : "${params.stepRunnerConfigDir}"
@@ -278,42 +312,47 @@ def call(Map paramsMap) {
           - mountPath: /var/pgp-private-keys
             name: pgp-private-keys
           ${PLATFORM_MOUNTS}
+          ${TLS_MOUNTS}
         - name: ${WORKFLOW_WORKER_NAME_PACKAGE}
           image: "${params.workflowWorkerImagePackage}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
           tty: true
-          command: ['sh', '-c', 'cat']
+          command: ['sh', '-c', 'update-ca-trust && cat']
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
           ${PLATFORM_MOUNTS}
+          ${TLS_MOUNTS}
         - name: ${WORKFLOW_WORKER_NAME_PUSH_ARTIFACTS}
           image: "${params.workflowWorkerImagePushArtifacts}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
           tty: true
-          command: ['sh', '-c', 'cat']
+          command: ['sh', '-c', 'update-ca-trust && cat']
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
           ${PLATFORM_MOUNTS}
+          ${TLS_MOUNTS}
         - name: ${WORKFLOW_WORKER_NAME_CONTAINER_OPERATIONS}
           image: "${params.workflowWorkerImageContainerOperations}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
           tty: true
-          command: ['sh', '-c', 'cat']
+          command: ['sh', '-c', 'update-ca-trust && cat']
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
           ${PLATFORM_MOUNTS}
+          ${TLS_MOUNTS}
         - name: ${WORKFLOW_WORKER_NAME_DEPLOY}
           image: "${params.workflowWorkerImageDeploy}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
           tty: true
-          command: ['sh', '-c', 'cat']
+          command: ['sh', '-c', 'update-ca-trust && cat']
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
           ${PLATFORM_MOUNTS}
+          ${TLS_MOUNTS}
         volumes:
         - name: home-ploigos
           emptyDir: {}
@@ -321,6 +360,7 @@ def call(Map paramsMap) {
           secret:
             secretName: ${params.pgpKeysSecretName}
         ${PLATFORM_VOLUMES}
+        ${TLS_VOLUMES}
     """
             }
         }
@@ -330,6 +370,7 @@ def call(Map paramsMap) {
                 parallel {
                     stage('SETUP: Workflow Step Runner') {
                         environment {
+                            GIT_SSL_NO_VERIFY               = "${params.gitTlsNoVerify}"
                             UPDATE_STEP_RUNNER_LIBRARY      = "${params.stepRunnerUpdateLibrary}"
                             STEP_RUNNER_LIB_SOURCE_URL      = "${params.stepRunnerLibSourceUrl}"
                             STEP_RUNNER_LIB_INDEX_URL       = "${params.stepRunnerLibIndexUrl}"
