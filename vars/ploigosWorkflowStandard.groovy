@@ -631,6 +631,7 @@ def call(Map paramsMap) {
                                     set -eu -o pipefail
 
                                     source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
+                                    export SONAR_SCANNER_OPTS='-Djavax.net.ssl.trustStore=/etc/pki/java/cacerts'
                                     psr \
                                         --config ${PSR_CONFIG_ARG} \
                                         --step static-code-analysis
