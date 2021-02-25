@@ -185,7 +185,7 @@ class WorkflowParams implements Serializable {
     /*
     Flag for utilizing a CA Bundle
     */
-    String trustedCABundleConfig = true
+    boolean trustedCABundleConfig = false
 
     /*
 	Variable for setting the name of the ConfigMap that is created to
