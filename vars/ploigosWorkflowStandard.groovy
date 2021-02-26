@@ -368,6 +368,9 @@ def call(Map paramsMap) {
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
           tty: true
           command: ['sh', '-c', 'update-ca-trust && cat']
+          env:
+          - name: SONAR_SCANNER_OPTS
+            value: -Djavax.net.ssl.trustStore=/etc/pki/java/cacerts
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
