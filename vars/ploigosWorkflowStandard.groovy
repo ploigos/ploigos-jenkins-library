@@ -10,7 +10,7 @@ class WorkflowParams implements Serializable {
 
     /* Name of the Kubernetes Secret containing the PGP private keys to import for use by SOPS
      * to decrypt encrypted Step Runner config. */
-    String pgpKeysSecretName = null
+    String pgpKeysSecretName = "tssc-gpg-key"
 
     /* Name of the "Development" environment used in the Step Runner configuration
      * files and to pass to the Workflow Step Runner when running a step targeted to
@@ -53,7 +53,7 @@ class WorkflowParams implements Serializable {
      *    - 'stepRunnerLibIndexUrl'
      *    - 'stepRunnerLibExtraIndexUrl'
      *    - 'stepRunnerLibVersion' */
-    boolean stepRunnerUpdateLibrary = false
+    boolean stepRunnerUpdateLibrary = true
 
     /* If 'stepRunnerUpdateLibrary' is true and 'stepRunnerLibSourceUrl' is not supplied then this
      * will be passed to pip as '--index-url' for installing the Workflow Step Runner library
@@ -110,7 +110,7 @@ class WorkflowParams implements Serializable {
      *
      * git+https://gitea.internal.example.xyz/tools/ploigos-step-runner.git@main
      * installs from an internal fork of the step runner library from the 'main' branch. */
-    String stepRunnerLibSourceUrl = ""
+    String stepRunnerLibSourceUrl = "git+https://github.com/ploigos/ploigos-step-runner.git@main"
 
     /* The UID to run the workflow worker containers as.
      *
@@ -135,47 +135,47 @@ class WorkflowParams implements Serializable {
     /* Container image to use when creating a workflow worker
      * to run pipeline steps when no other specific container image has been
      * specified for that step. */
-    String workflowWorkerImageDefault = "ploigos/ploigos-ci-agent-jenkins:latest"
+    String workflowWorkerImageDefault = "quay.io/ploigos/ploigos-ci-agent-jenkins:v0.16.0"
 
     /* Container image to use when creating a workflow worker
      * to run pipeline steps when performing unit test step(s). */
-    String workflowWorkerImageUnitTest = null
+    String workflowWorkerImageUnitTest = "quay.io/akrohg/ploigos-tool-maven36:latest"
 
     /* Container image to use when creating a workflow worker
      * to run pipeline steps when performing package application step(s). */
-    String workflowWorkerImagePackage = null
+    String workflowWorkerImagePackage = "quay.io/akrohg/ploigos-tool-maven36:latest"
 
     /* Container image to use when creating a workflow worker
      * to run pipeline steps when performing static code analysis step(s). */
-    String workflowWorkerImageStaticCodeAnalysis = null
+    String workflowWorkerImageStaticCodeAnalysis = "quay.io/ploigos/ploigos-tool-sonar:v0.16.0"
 
     /* Container image to use when creating a workflow worker
      * to run pipeline steps when performing push push packaged artifacts step(s). */
-    String workflowWorkerImagePushArtifacts = null
+    String workflowWorkerImagePushArtifacts = "quay.io/akrohg/ploigos-tool-maven36:latest"
 
     /* Container image to use when creating a workflow worker
      * to run pipeline steps when performing container operations (build/push/etc) step(s). */
-    String workflowWorkerImageContainerOperations = "ploigos/ploigos-tool-containers:latest"
+    String workflowWorkerImageContainerOperations = "quay.io/ploigos/ploigos-tool-containers:v0.16.0"
 
     /* Container image to use when creating a workflow worker
      * to run pipeline steps when performing container image static compliance scan step(s). */
-    String workflowWorkerImageContainerImageStaticComplianceScan = "ploigos/ploigos-tool-openscap:latest"
+    String workflowWorkerImageContainerImageStaticComplianceScan = "quay.io/ploigos/ploigos-tool-openscap:v0.16.0"
 
     /* Container image to use when creating a workflow worker to run pipeline steps
      * when performing container image static vulnerability scan step(s). */
-    String workflowWorkerImageContainerImageStaticVulnerabilityScan = "ploigos/ploigos-tool-openscap:latest"
+    String workflowWorkerImageContainerImageStaticVulnerabilityScan = "quay.io/ploigos/ploigos-tool-openscap:v0.16.0"
 
     /* Container image to use when creating a workflow worker
      * to run pipeline steps when performing deploy step(s). */
-    String workflowWorkerImageDeploy = "ploigos/ploigos-tool-argocd:latest"
+    String workflowWorkerImageDeploy = "quay.io/ploigos/ploigos-tool-argocd:v0.16.0"
 
     /* Container image to use when creating a workflow worker
      * to run pipeline steps when performing validate environment configuration step(s). */
-    String workflowWorkerImageValidateEnvironmentConfiguration = "ploigos/ploigos-tool-config-lint:latest"
+    String workflowWorkerImageValidateEnvironmentConfiguration = "quay.io/ploigos/ploigos-tool-config-lint:v0.16.0"
 
     /* Container image to use when creating a workflow worker
      * to run pipeline steps when performing user acceptance tests (UAT) step(s). */
-    String workflowWorkerImageUAT = null
+    String workflowWorkerImageUAT = "quay.io/akrohg/ploigos-tool-maven36:latest"
 
     /* Kubernetes ServiceAccount that the Jenkins Worker Kubernetes Pod should be deployed with.
      *
@@ -204,7 +204,7 @@ class WorkflowParams implements Serializable {
      * objects, which are mounted into the agent Pod:
      *  - A ConfigMap named ploigos-platform-config
      *  - A Secret named ploigos-platform-config-secrets */
-    boolean separatePlatformConfig = false
+    boolean separatePlatformConfig = true
 
     /*
     Flag for utilizing a CA Bundle
