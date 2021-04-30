@@ -159,31 +159,31 @@ class WorkflowParams implements Serializable {
     Variable for setting the Registry URL of the container image to scan
     i.e. quay.io/myorg/mycontainer:mytag registryURL = "quay.io"
     */
-    string registryURL = ''
+    String registryURL = ''
     
     /*
     Variable for setting the name of the Jenkins Credentials that containe a
     Username/Password pair for accessing your registry where the container image is hosted
     */
-    string registryCredentialName = ''
+    String registryCredentialName = ''
     
     /*
     Variable for setting the Org/Subdirectory of the container image to scan
     i.e. quay.io/myorg/mycontainer:mytag imageRepo = "myorg"
     */
-    string imageOrg = ''
+    String imageOrg = ''
     
     /*
     Variable for setting the Repository/Container of the container image to scan
     i.e. quay.io/myorg/mycontainer:mytag imageName = "mycontainer"
     */
-    string imageName = ''
+    String imageName = ''
     
     /*
     Variable for setting the Repo/Org/Subdirectory of the container image to scan
     i.e. quay.io/myorg/mycontainer:mytag imageTag = "mytag"
     */
-    string imageTag = ''
+    String imageTag = ''
     
 }   
 
@@ -409,17 +409,14 @@ def call(Map paramsMap) {
                     stage('CI: Pull Container Image') {
                         steps {
                             container("${WORKFLOW_WORKER_NAME_CONTAINER_OPERATIONS}") {
-	                        withCredentials([usernamePassword(credentialsId: "${params.registryCredentialName}",
-		                      usernameVariable: 'REGISTRY_USERNAME',
-                		      passwordVariable: 'REGISTRY_PASSWORD')]) {
-
-                                  sh """
-                                      if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
-                                      set -eu -o pipefail
+	                    	withCredentials([usernamePassword(credentialsId: "${params.registryCredentialName}", usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
+                                    sh """
+                                        if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
+                                        set -eu -o pipefail
                                       
-				      buildah pull --storage-driver=vfs --creds=${REGISTRY_USERNAME}:${REGISTRY_PASSWORD} ${params.registryURL}/${IMAGE_TARGET}
-				      buildah push --storage-driver=vfs ${params.registryURL}/${IMAGE_TARGET} docker-archive:/home/ploigos/${params.imageName}.tar
-                                     """
+				        buildah pull --storage-driver=vfs --creds=${REGISTRY_USERNAME}:${REGISTRY_PASSWORD} ${params.registryURL}/${IMAGE_TARGET}
+				        buildah push --storage-driver=vfs ${params.registryURL}/${IMAGE_TARGET} docker-archive:/home/ploigos/${params.imageName}.tar
+                                   """
                                 } //WithCredentials
 			    }
                         }
