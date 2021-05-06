@@ -920,5 +920,21 @@ def call(Map paramsMap) {
                 }
             } // PROD Stage
         } // stages
+        post {
+            always {
+                container("${WORKFLOW_WORKER_NAME_DEFAULT}") {
+                    sh """
+                        if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
+                        set -eu -o pipefail
+
+                        source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
+                        psr \
+                            --config ${PSR_CONFIG_ARG} \
+                            --step report
+                    """
+                    archiveArtifacts artifacts: 'step-runner-working/report/*.zip', fingerprint: true
+                }
+            } // always
+        } // post
     } // pipeline
 } // call
