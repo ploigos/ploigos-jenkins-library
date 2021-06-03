@@ -933,6 +933,7 @@ def call(Map paramsMap) {
                             --step report
                     """
                     archiveArtifacts artifacts: 'step-runner-working/report/*.zip', fingerprint: true
+                    input "continue?"
                 }
             } // always
         } // post
