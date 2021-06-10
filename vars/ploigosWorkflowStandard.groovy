@@ -443,6 +443,26 @@ def call(Map paramsMap) {
             name: home-ploigos
           ${PLATFORM_MOUNTS}
           ${TLS_MOUNTS}
+        - name: containers-old
+          image: 'ploigos/ploigos-tool-containers:v0.16'
+          imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
+          tty: true
+          command: ['sh', '-c', 'update-ca-trust && cat']
+          volumeMounts:
+          - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
+            name: home-ploigos
+          ${PLATFORM_MOUNTS}
+          ${TLS_MOUNTS}
+        - name: containers-fix
+          image: 'ploigos/ploigos-tool-containers:pr-66'
+          imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
+          tty: true
+          command: ['sh', '-c', 'update-ca-trust && cat']
+          volumeMounts:
+          - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
+            name: home-ploigos
+          ${PLATFORM_MOUNTS}
+          ${TLS_MOUNTS}
         volumes:
         - name: home-ploigos
           emptyDir: {}
