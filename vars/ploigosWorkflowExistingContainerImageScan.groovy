@@ -8,6 +8,10 @@ class WorkflowParams implements Serializable {
      * Workflow Step Runner when running workflow steps. */
     String stepRunnerConfigDir = ''
 
+    /* Name of the Kubernetes Secret containing the PGP private keys to import for use by SOPS
+     * to decrypt encrypted Step Runner config. */
+    String pgpKeysSecretName = null
+
     /* Name of the python package to use as the Workflow Step Runner. */
     String stepRunnerPackageName = 'ploigos-step-runner'
 
@@ -79,6 +83,11 @@ class WorkflowParams implements Serializable {
      * installs from an internal fork of the step runner library from the 'main' branch. */
     String stepRunnerLibSourceUrl = ""
 
+    /* If 'stepRunnerUpdateLibrary' is true and 'stepRunnerLibSourceUrl' is specified this value
+     * determines whether to verify the Git TLS when checking out the step runner library source
+     * for installation. */
+    boolean stepRunnerLibSourceGitTLSNoVerify = false
+
     /* The UID to run the workflow worker containers as.
      *
      * IMPORTANT:
@@ -138,54 +147,38 @@ class WorkflowParams implements Serializable {
      *       type: MustRunAsm */
     String workflowServiceAccountName = 'jenkins'
 
-    /*
-    Flag for utilizing a CA Bundle
-    */
-    boolean trustedCABundleConfig = false
+    /* Flag indicating that platform-level configuration is separated from
+     * app-level configuration, instead provided by way of the following Kubernetes
+     * objects, which are mounted into the agent Pod:
+     *  - A ConfigMap named ploigos-platform-config
+     *  - A Secret named ploigos-platform-config-secrets */
+    boolean separatePlatformConfig = false
 
-    /*
-	Variable for setting the name of the ConfigMap that is created to
-        pass the additional CAs into the Containers that Jenkins uses as Agents
-    */
-    String trustedCABundleConfigMapName = 'trustedcabunle'
+    /* Name of the ConfigMap to mount as a trusted CA Bundle.
+     * Useful for when interacting with external services signed by an internal CA.
+     * If not specified then ignored. */
+    String trustedCABundleConfigMapName = null
 
-    /*
-    Flag for setting toggling SSL Cert Verification in Git during the
-        Pip Install of Step Runner. Set to 'true' for skipping cert verification.
-    */
-    String gitTlsNoVerify = false
-    
-    /*
-    Variable for setting the Registry URL of the container image to scan
-    i.e. quay.io/myorg/mycontainer:mytag registryURL = "quay.io"
-    */
-    String registryURL = ''
-    
-    /*
-    Variable for setting the name of the Jenkins Credentials that containe a
-    Username/Password pair for accessing your registry where the container image is hosted
-    */
+    /* Jenkins Credentials that contains the Username/Password pair for accessing your
+     * registry where the container image is hosted. */
     String registryCredentialName = ''
-    
-    /*
-    Variable for setting the Org/Subdirectory of the container image to scan
-    i.e. quay.io/myorg/mycontainer:mytag imageRepo = "myorg"
-    */
+
+    /* Registry URL of the container image to scan.
+     * i.e. In `quay.io/myorg/mycontainer:mytag` registry URL is `quay.io`. */
+    String registryURL = ''
+
+    /* Org/Subdirectory of the container image to scan.
+     * i.e. In `quay.io/myorg/mycontainer:mytag` image organization is `myorg`. */
     String imageOrg = ''
-    
-    /*
-    Variable for setting the Repository/Container of the container image to scan
-    i.e. quay.io/myorg/mycontainer:mytag imageName = "mycontainer"
-    */
+
+    /* Repository/Container of the container image to scan.
+     * i.e. In `quay.io/myorg/mycontainer:mytag` image name is `mycontainer`.*/
     String imageName = ''
-    
-    /*
-    Variable for setting the Repo/Org/Subdirectory of the container image to scan
-    i.e. quay.io/myorg/mycontainer:mytag imageTag = "mytag"
-    */
+
+    /* Container image tag to scan.
+     * i.e. In `quay.io/myorg/mycontainer:mytag` image tag is `mytag`. */
     String imageTag = ''
-    
-}   
+}
 
 // Java Backend Reference Jenkinsfile
 def call(Map paramsMap) {
@@ -226,15 +219,38 @@ def call(Map paramsMap) {
     /* Directory into which platform configuration is mounted, if applicable */
     String PLATFORM_CONFIG_DIR = "/opt/platform-config"
 
+    /* Additional mounts for agent containers, if separatePlatformConfig == true */
+    String PLATFORM_MOUNTS = params.separatePlatformConfig ? """
+          - mountPath: ${PLATFORM_CONFIG_DIR}/config.yml
+            name: ploigos-platform-config
+            subPath: config.yml
+          - mountPath: ${PLATFORM_CONFIG_DIR}/config-secrets.yml
+            name: ploigos-platform-config-secrets
+            subPath: config-secrets.yml
+    """ : ""
+
+    /* Additional volumes for the agent Pod, if separatePlatformConfig == true */
+    String PLATFORM_VOLUMES = params.separatePlatformConfig ? """
+        - name: ploigos-platform-config
+          configMap:
+            name: ploigos-platform-config
+        - name: ploigos-platform-config-secrets
+          secret:
+            secretName: ploigos-platform-config-secrets
+    """ : ""
+
+    /* determine if trusted CA bundle config map is specified. */
+    boolean ENABLE_TRUSTED_CA_BUNDLE_CONFIG_MAP = (params.trustedCABundleConfigMapName?.trim())
+
     /* Additional mount for agent containers, if trustedCaConfig == true */
-    String TLS_MOUNTS = params.trustedCABundleConfig ? """
+    String TLS_MOUNTS = ENABLE_TRUSTED_CA_BUNDLE_CONFIG_MAP ? """
           - name: trusted-ca
             mountPath: /etc/pki/ca-trust/source/anchors
             readOnly: true
     """ : ""
 
     /* Additional volume for agent containers, if trustedCaConfig == true */
-    String TLS_VOLUMES = params.trustedCABundleConfig ? """
+    String TLS_VOLUMES = ENABLE_TRUSTED_CA_BUNDLE_CONFIG_MAP? """
         - name: trusted-ca
           configMap:
             name: ${params.trustedCABundleConfigMapName}
@@ -242,13 +258,13 @@ def call(Map paramsMap) {
             - key: ca-bundle.crt
               path: tls-ca-bundle.pem
     """ : ""
-    
-    /* Verify and setup the Image_Target for this container scan. */
-    String IMAGE_TARGET = "${params.imageOrg}/${params.imageName}:${params.imageTag}"
-
 
     /* Combine this app's local config with platform-level config, if separatePlatformConfig == true */
-    String PSR_CONFIG_ARG = "${params.stepRunnerConfigDir}"
+    String PSR_CONFIG_ARG = params.separatePlatformConfig ?
+        "${PLATFORM_CONFIG_DIR} ${params.stepRunnerConfigDir}" : "${params.stepRunnerConfigDir}"
+
+    /* Verify and setup the Image_Target for this container scan. */
+    String IMAGE_TARGET = "${params.imageOrg}/${params.imageName}:${params.imageTag}"
 
     pipeline {
         options {
@@ -277,6 +293,9 @@ def call(Map paramsMap) {
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
+          - mountPath: /var/pgp-private-keys
+            name: pgp-private-keys
+          ${PLATFORM_MOUNTS}
           ${TLS_MOUNTS}
         - name: ${WORKFLOW_WORKER_NAME_CONTAINER_OPERATIONS}
           image: "${params.workflowWorkerImageContainerOperations}"
@@ -286,6 +305,7 @@ def call(Map paramsMap) {
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
+          ${PLATFORM_MOUNTS}
           ${TLS_MOUNTS}
         - name: ${WORKFLOW_WORKER_NAME_CONTAINER_IMAGE_STATIC_COMPLIANCE_SCAN}
           image: "${params.workflowWorkerImageContainerImageStaticComplianceScan}"
@@ -295,6 +315,7 @@ def call(Map paramsMap) {
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
+          ${PLATFORM_MOUNTS}
           ${TLS_MOUNTS}
         - name: ${WORKFLOW_WORKER_NAME_CONTAINER_IMAGE_STATIC_VULNERABILITY_SCAN}
           image: "${params.workflowWorkerImageContainerImageStaticVulnerabilityScan}"
@@ -304,10 +325,15 @@ def call(Map paramsMap) {
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
+          ${PLATFORM_MOUNTS}
           ${TLS_MOUNTS}
         volumes:
         - name: home-ploigos
           emptyDir: {}
+        - name: pgp-private-keys
+          secret:
+            secretName: ${params.pgpKeysSecretName}
+        ${PLATFORM_VOLUMES}
         ${TLS_VOLUMES}
     """
             }
@@ -318,7 +344,7 @@ def call(Map paramsMap) {
                 parallel {
                     stage('SETUP: Workflow Step Runner') {
                         environment {
-                            GIT_SSL_NO_VERIFY               = "${params.gitTlsNoVerify}"
+                            GIT_SSL_NO_VERIFY               = "${params.stepRunnerLibSourceGitTLSNoVerify}"
                             UPDATE_STEP_RUNNER_LIBRARY      = "${params.stepRunnerUpdateLibrary}"
                             STEP_RUNNER_LIB_SOURCE_URL      = "${params.stepRunnerLibSourceUrl}"
                             STEP_RUNNER_LIB_INDEX_URL       = "${params.stepRunnerLibIndexUrl}"
@@ -402,8 +428,23 @@ def call(Map paramsMap) {
                             }
                         }
                     }
-                }
-            }
+                    stage('SETUP: PGP Keys') {
+                        steps {
+                            container("${WORKFLOW_WORKER_NAME_DEFAULT}") {
+                                sh """
+                                    if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
+                                    set -eu -o pipefail
+
+                                    echo "*******************"
+                                    echo "* Import PGP Keys *"
+                                    echo "*******************"
+                                    gpg --import /var/pgp-private-keys/*
+                                """
+                            }
+                        }
+                    }
+                } // parallel
+            } // SETUP
             stage('Continuous Integration') {
                 stages {
                     stage('CI: Pull Container Image') {
@@ -413,9 +454,9 @@ def call(Map paramsMap) {
                                     sh """
                                         if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
                                         set -eu -o pipefail
-                                      
-				        buildah pull --storage-driver=vfs --creds=${REGISTRY_USERNAME}:${REGISTRY_PASSWORD} ${params.registryURL}/${IMAGE_TARGET}
-				        buildah push --storage-driver=vfs ${params.registryURL}/${IMAGE_TARGET} docker-archive:/home/ploigos/${params.imageName}.tar
+
+				                        buildah pull --storage-driver=vfs --creds=${REGISTRY_USERNAME}:${REGISTRY_PASSWORD} ${params.registryURL}/${IMAGE_TARGET}
+				                        buildah push --storage-driver=vfs ${params.registryURL}/${IMAGE_TARGET} docker-archive:/home/ploigos/${params.imageName}.tar
                                    """
                                 } //WithCredentials
 			    }
@@ -434,7 +475,7 @@ def call(Map paramsMap) {
                                             psr \
                                                 --config ${PSR_CONFIG_ARG} \
                                                 --step container-image-static-compliance-scan \
-						--step-config image-tar-file=/home/ploigos/${params.imageName}.tar
+						                        --step-config image-tar-file=/home/ploigos/${params.imageName}.tar
                                         """
                                     }
                                 }
@@ -450,22 +491,32 @@ def call(Map paramsMap) {
                                             psr \
                                                 --config ${PSR_CONFIG_ARG} \
                                                 --step container-image-static-vulnerability-scan \
-						--step-config image-tar-file=/home/ploigos/${params.imageName}.tar
+						                        --step-config image-tar-file=/home/ploigos/${params.imageName}.tar
                                         """
                                     }
                                 }
                             }
-			    
+
                         }
                     }
-		}
+		        }
             } // CI Stages
         } // stages
         post {
-          always {
-	    // You can use this post-always section to capture and handle results which can be found in:
-	    // ${env.WORKSPACE}/step-runner-working/*
-          }
-       } //post
+            always {
+                container("${WORKFLOW_WORKER_NAME_DEFAULT}") {
+                    sh """
+                        if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
+                        set -eu -o pipefail
+
+                        source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
+                        psr \
+                            --config ${PSR_CONFIG_ARG} \
+                            --step report
+                    """
+                    archiveArtifacts artifacts: 'step-runner-working/report/*.zip', fingerprint: true
+                }
+            } // always
+        } // post
     } // pipeline
 } // call

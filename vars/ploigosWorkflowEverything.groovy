@@ -112,6 +112,11 @@ class WorkflowParams implements Serializable {
      * installs from an internal fork of the step runner library from the 'main' branch. */
     String stepRunnerLibSourceUrl = ""
 
+    /* If 'stepRunnerUpdateLibrary' is true and 'stepRunnerLibSourceUrl' is specified this value
+     * determines whether to verify the Git TLS when checking out the step runner library source
+     * for installation. */
+    boolean stepRunnerLibSourceGitTLSNoVerify = false
+
     /* The UID to run the workflow worker containers as.
      *
      * IMPORTANT:
@@ -177,10 +182,6 @@ class WorkflowParams implements Serializable {
      * to run pipeline steps when performing user acceptance tests (UAT) step(s). */
     String workflowWorkerImageUAT = null
 
-    /* Container image to use when creating a workflow worker
-     * to run pipeline steps when performing automated-governance step(s). */
-    String workflowWorkerAutomatedGovernance = "ploigos/ploigos-tool-rekor:latest"
-
     /* Kubernetes ServiceAccount that the Jenkins Worker Kubernetes Pod should be deployed with.
      *
      * IMPORTANT
@@ -210,22 +211,10 @@ class WorkflowParams implements Serializable {
      *  - A Secret named ploigos-platform-config-secrets */
     boolean separatePlatformConfig = false
 
-    /*
-    Flag for utilizing a CA Bundle
-    */
-    boolean trustedCABundleConfig = false
-
-    /*
-	Variable for setting the name of the ConfigMap that is created to
-        pass the additional CAs into the Containers that Jenkins uses as Agents
-    */
-    String trustedCABundleConfigMapName = 'trustedcabundle'
-
-    /*
-    Flag for setting toggling SSL Cert Verification in Git during the
-        Pip Install of Step Runner. Set to 'true' for skipping cert verification.
-    */
-    String gitTlsNoVerify = false
+    /* Name of the ConfigMap to mount as a trusted CA Bundle.
+     * Useful for when interacting with external services signed by an internal CA.
+     * If not specified then ignored. */
+    String trustedCABundleConfigMapName = null
 }
 
 // Java Backend Reference Jenkinsfile
@@ -242,13 +231,13 @@ def call(Map paramsMap) {
     // SEE: https://stackoverflow.com/questions/25088034/use-git-repo-name-as-env-variable-in-jenkins-job
     String GIT_BRANCH = scm.branches[0].name
     String GIT_BRANCH_KUBE_LABEL_VALUE = GIT_BRANCH
-            .replaceAll(KUBE_LABEL_NOT_SAFE_CHARS_REGEX, '_')
-            .drop(GIT_BRANCH.length()-KUBE_LABEL_MAX_LENGTH)
+        .replaceAll(KUBE_LABEL_NOT_SAFE_CHARS_REGEX, '_')
+        .drop(GIT_BRANCH.length()-KUBE_LABEL_MAX_LENGTH)
     String GIT_URL = scm.userRemoteConfigs[0].url
     String GIT_REPO_NAME = "${GIT_URL.replaceFirst(/^.*\/([^\/]+?).git$/, '$1')}"
     String GIT_REPO_NAME_KUBE_LABEL_VALUE = GIT_REPO_NAME
-            .replaceAll(KUBE_LABEL_NOT_SAFE_CHARS_REGEX, '-')
-            .drop(GIT_REPO_NAME.length()-KUBE_LABEL_MAX_LENGTH)
+        .replaceAll(KUBE_LABEL_NOT_SAFE_CHARS_REGEX, '-')
+        .drop(GIT_REPO_NAME.length()-KUBE_LABEL_MAX_LENGTH)
 
     String WORKFLOW_WORKER_NAME_DEFAULT              = 'jnlp'
     String WORKFLOW_WORKER_NAME_UNIT_TEST            = 'unit-test'
@@ -261,7 +250,6 @@ def call(Map paramsMap) {
     String WORKFLOW_WORKER_NAME_DEPLOY = 'deploy'
     String WORKFLOW_WORKER_NAME_VALIDATE_ENVIRONMENT_CONFIGURATION        = 'validate-environment-configuration'
     String WORKFLOW_WORKER_NAME_UAT    = 'uat'
-    String WORKFLOW_WORKER_NAME_AUTOMATED_GOVERNANCE = 'automated-governance'
 
     /* Workspace for the container users home directory.
      *
@@ -295,15 +283,18 @@ def call(Map paramsMap) {
             secretName: ploigos-platform-config-secrets
     """ : ""
 
+    /* determine if trusted CA bundle config map is specified. */
+    boolean ENABLE_TRUSTED_CA_BUNDLE_CONFIG_MAP = (params.trustedCABundleConfigMapName?.trim())
+
     /* Additional mount for agent containers, if trustedCaConfig == true */
-    String TLS_MOUNTS = params.trustedCABundleConfig ? """
+    String TLS_MOUNTS = ENABLE_TRUSTED_CA_BUNDLE_CONFIG_MAP ? """
           - name: trusted-ca
             mountPath: /etc/pki/ca-trust/source/anchors
             readOnly: true
     """ : ""
 
     /* Additional volume for agent containers, if trustedCaConfig == true */
-    String TLS_VOLUMES = params.trustedCABundleConfig ? """
+    String TLS_VOLUMES = ENABLE_TRUSTED_CA_BUNDLE_CONFIG_MAP? """
         - name: trusted-ca
           configMap:
             name: ${params.trustedCABundleConfigMapName}
@@ -314,7 +305,7 @@ def call(Map paramsMap) {
 
     /* Combine this app's local config with platform-level config, if separatePlatformConfig == true */
     String PSR_CONFIG_ARG = params.separatePlatformConfig ?
-            "${PLATFORM_CONFIG_DIR} ${params.stepRunnerConfigDir}" : "${params.stepRunnerConfigDir}"
+        "${PLATFORM_CONFIG_DIR} ${params.stepRunnerConfigDir}" : "${params.stepRunnerConfigDir}"
 
     pipeline {
         options {
@@ -448,18 +439,6 @@ def call(Map paramsMap) {
             name: home-ploigos
           ${PLATFORM_MOUNTS}
           ${TLS_MOUNTS}
-        - name: ${WORKFLOW_WORKER_NAME_AUTOMATED_GOVERNANCE}
-          image: "${params.workflowWorkerAutomatedGovernance}"
-          imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
-          tty: true
-          command: ['sh', '-c', 'update-ca-trust && cat']
-          volumeMounts:
-          - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
-            name: home-ploigos
-          - mountPath: /var/pgp-private-keys
-            name: pgp-private-keys
-          ${PLATFORM_MOUNTS}
-          ${TLS_MOUNTS}
         volumes:
         - name: home-ploigos
           emptyDir: {}
@@ -477,7 +456,7 @@ def call(Map paramsMap) {
                 parallel {
                     stage('SETUP: Workflow Step Runner') {
                         environment {
-                            GIT_SSL_NO_VERIFY               = "${params.gitTlsNoVerify}"
+                            GIT_SSL_NO_VERIFY               = "${params.stepRunnerLibSourceGitTLSNoVerify}"
                             UPDATE_STEP_RUNNER_LIBRARY      = "${params.stepRunnerUpdateLibrary}"
                             STEP_RUNNER_LIB_SOURCE_URL      = "${params.stepRunnerLibSourceUrl}"
                             STEP_RUNNER_LIB_INDEX_URL       = "${params.stepRunnerLibIndexUrl}"
@@ -576,8 +555,8 @@ def call(Map paramsMap) {
                             }
                         }
                     }
-                }
-            }
+                } // parallel
+            } // SETUP
             stage('Continuous Integration') {
                 stages {
                     stage('CI: Generate Metadata') {
@@ -681,21 +660,6 @@ def call(Map paramsMap) {
                                     psr \
                                         --config ${PSR_CONFIG_ARG} \
                                         --step create-container-image
-                                """
-                            }
-                        }
-                    }
-                    stage('CI: Automated Governance') {
-                        steps {
-                            container("${WORKFLOW_WORKER_NAME_AUTOMATED_GOVERNANCE}") {
-                                sh """
-                                    if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
-                                    set -eu -o pipefail
-
-                                    source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
-                                    psr \
-                                        --config ${PSR_CONFIG_ARG} \
-                                        --step automated-governance \
                                 """
                             }
                         }
@@ -952,5 +916,21 @@ def call(Map paramsMap) {
                 }
             } // PROD Stage
         } // stages
+        post {
+            always {
+                container("${WORKFLOW_WORKER_NAME_DEFAULT}") {
+                    sh """
+                        if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
+                        set -eu -o pipefail
+
+                        source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
+                        psr \
+                            --config ${PSR_CONFIG_ARG} \
+                            --step report
+                    """
+                    archiveArtifacts artifacts: 'step-runner-working/report/*.zip', fingerprint: true
+                }
+            } // always
+        } // post
     } // pipeline
 } // call
