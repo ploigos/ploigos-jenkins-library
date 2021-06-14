@@ -112,6 +112,11 @@ class WorkflowParams implements Serializable {
      * installs from an internal fork of the step runner library from the 'main' branch. */
     String stepRunnerLibSourceUrl = ""
 
+    /* If 'stepRunnerUpdateLibrary' is true and 'stepRunnerLibSourceUrl' is specified this value
+     * determines whether to verify the Git TLS when checking out the step runner library source
+     * for installation. */
+    boolean stepRunnerLibSourceGitTLSNoVerify = false
+
     /* The UID to run the workflow worker containers as.
      *
      * IMPORTANT:
@@ -157,10 +162,6 @@ class WorkflowParams implements Serializable {
      * to run pipeline steps when performing container operations (build/push/etc) step(s). */
     String workflowWorkerImageContainerOperations = "ploigos/ploigos-tool-containers:latest"
 
-    /* Container image to use when creating a workflow worker
-     * to run pipeline steps when performing container image static compliance scan step(s). */
-    String workflowWorkerImageContainerImageStaticComplianceScan = "ploigos/ploigos-tool-openscap:latest"
-
     /* Container image to use when creating a workflow worker to run pipeline steps
      * when performing container image static vulnerability scan step(s). */
     String workflowWorkerImageContainerImageStaticVulnerabilityScan = "ploigos/ploigos-tool-openscap:latest"
@@ -168,10 +169,6 @@ class WorkflowParams implements Serializable {
     /* Container image to use when creating a workflow worker
      * to run pipeline steps when performing deploy step(s). */
     String workflowWorkerImageDeploy = "ploigos/ploigos-tool-argocd:latest"
-
-    /* Container image to use when creating a workflow worker
-     * to run pipeline steps when performing validate environment configuration step(s). */
-    String workflowWorkerImageValidateEnvironmentConfiguration = "ploigos/ploigos-tool-config-lint:latest"
 
     /* Container image to use when creating a workflow worker
      * to run pipeline steps when performing user acceptance tests (UAT) step(s). */
@@ -206,22 +203,10 @@ class WorkflowParams implements Serializable {
      *  - A Secret named ploigos-platform-config-secrets */
     boolean separatePlatformConfig = false
 
-    /*
-    Flag for utilizing a CA Bundle
-    */
-    boolean trustedCABundleConfig = false
-
-    /*
-	Variable for setting the name of the ConfigMap that is created to
-        pass the additional CAs into the Containers that Jenkins uses as Agents
-    */
-    String trustedCABundleConfigMapName = 'trustedcabundle'
-
-    /*
-    Flag for setting toggling SSL Cert Verification in Git during the
-        Pip Install of Step Runner. Set to 'true' for skipping cert verification.
-    */
-    String gitTlsNoVerify = false
+    /* Name of the ConfigMap to mount as a trusted CA Bundle.
+     * Useful for when interacting with external services signed by an internal CA.
+     * If not specified then ignored. */
+    String trustedCABundleConfigMapName = null
 }
 
 // Java Backend Reference Jenkinsfile
@@ -252,10 +237,8 @@ def call(Map paramsMap) {
     String WORKFLOW_WORKER_NAME_STATIC_CODE_ANALYSIS = 'static-code-analysis'
     String WORKFLOW_WORKER_NAME_PUSH_ARTIFACTS       = 'push-artifacts'
     String WORKFLOW_WORKER_NAME_CONTAINER_OPERATIONS = 'containers'
-    String WORKFLOW_WORKER_NAME_CONTAINER_IMAGE_STATIC_COMPLIANCE_SCAN    = 'container-image-static-compliance-scan'
     String WORKFLOW_WORKER_NAME_CONTAINER_IMAGE_STATIC_VULNERABILITY_SCAN = 'container-image-static-vulnerability-scan'
     String WORKFLOW_WORKER_NAME_DEPLOY = 'deploy'
-    String WORKFLOW_WORKER_NAME_VALIDATE_ENVIRONMENT_CONFIGURATION        = 'validate-environment-configuration'
     String WORKFLOW_WORKER_NAME_UAT    = 'uat'
 
     /* Workspace for the container users home directory.
@@ -290,15 +273,18 @@ def call(Map paramsMap) {
             secretName: ploigos-platform-config-secrets
     """ : ""
 
+    /* determine if trusted CA bundle config map is specified. */
+    boolean ENABLE_TRUSTED_CA_BUNDLE_CONFIG_MAP = (params.trustedCABundleConfigMapName?.trim())
+
     /* Additional mount for agent containers, if trustedCaConfig == true */
-    String TLS_MOUNTS = params.trustedCABundleConfig ? """
+    String TLS_MOUNTS = ENABLE_TRUSTED_CA_BUNDLE_CONFIG_MAP ? """
           - name: trusted-ca
             mountPath: /etc/pki/ca-trust/source/anchors
             readOnly: true
     """ : ""
 
     /* Additional volume for agent containers, if trustedCaConfig == true */
-    String TLS_VOLUMES = params.trustedCABundleConfig ? """
+    String TLS_VOLUMES = ENABLE_TRUSTED_CA_BUNDLE_CONFIG_MAP? """
         - name: trusted-ca
           configMap:
             name: ${params.trustedCABundleConfigMapName}
@@ -393,16 +379,6 @@ def call(Map paramsMap) {
             name: home-ploigos
           ${PLATFORM_MOUNTS}
           ${TLS_MOUNTS}
-        - name: ${WORKFLOW_WORKER_NAME_CONTAINER_IMAGE_STATIC_COMPLIANCE_SCAN}
-          image: "${params.workflowWorkerImageContainerImageStaticComplianceScan}"
-          imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
-          tty: true
-          command: ['sh', '-c', 'update-ca-trust && cat']
-          volumeMounts:
-          - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
-            name: home-ploigos
-          ${PLATFORM_MOUNTS}
-          ${TLS_MOUNTS}
         - name: ${WORKFLOW_WORKER_NAME_CONTAINER_IMAGE_STATIC_VULNERABILITY_SCAN}
           image: "${params.workflowWorkerImageContainerImageStaticVulnerabilityScan}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
@@ -415,16 +391,6 @@ def call(Map paramsMap) {
           ${TLS_MOUNTS}
         - name: ${WORKFLOW_WORKER_NAME_DEPLOY}
           image: "${params.workflowWorkerImageDeploy}"
-          imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
-          tty: true
-          command: ['sh', '-c', 'update-ca-trust && cat']
-          volumeMounts:
-          - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
-            name: home-ploigos
-          ${PLATFORM_MOUNTS}
-          ${TLS_MOUNTS}
-        - name: ${WORKFLOW_WORKER_NAME_VALIDATE_ENVIRONMENT_CONFIGURATION}
-          image: "${params.workflowWorkerImageValidateEnvironmentConfiguration}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
           tty: true
           command: ['sh', '-c', 'update-ca-trust && cat']
@@ -460,7 +426,7 @@ def call(Map paramsMap) {
                 parallel {
                     stage('SETUP: Workflow Step Runner') {
                         environment {
-                            GIT_SSL_NO_VERIFY               = "${params.gitTlsNoVerify}"
+                            GIT_SSL_NO_VERIFY               = "${params.stepRunnerLibSourceGitTLSNoVerify}"
                             UPDATE_STEP_RUNNER_LIBRARY      = "${params.stepRunnerUpdateLibrary}"
                             STEP_RUNNER_LIB_SOURCE_URL      = "${params.stepRunnerLibSourceUrl}"
                             STEP_RUNNER_LIB_INDEX_URL       = "${params.stepRunnerLibIndexUrl}"
@@ -559,8 +525,8 @@ def call(Map paramsMap) {
                             }
                         }
                     }
-                }
-            }
+                } // parallel
+            } // SETUP
             stage('Continuous Integration') {
                 stages {
                     stage('CI: Generate Metadata') {
@@ -670,21 +636,6 @@ def call(Map paramsMap) {
                     }
                     stage('CI: Static Image Scan') {
                         parallel {
-                            stage('CI: Static Image Scan: Compliance') {
-                                steps {
-                                    container("${WORKFLOW_WORKER_NAME_CONTAINER_IMAGE_STATIC_COMPLIANCE_SCAN}") {
-                                        sh """
-                                            if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
-                                            set -eu -o pipefail
-
-                                            source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
-                                            psr \
-                                                --config ${PSR_CONFIG_ARG} \
-                                                --step container-image-static-compliance-scan
-                                        """
-                                    }
-                                }
-                            }
                             stage('CI: Static Image Scan: Vulnerability') {
                                 steps {
                                     container("${WORKFLOW_WORKER_NAME_CONTAINER_IMAGE_STATIC_VULNERABILITY_SCAN}") {
@@ -713,21 +664,6 @@ def call(Map paramsMap) {
                                     psr \
                                         --config ${PSR_CONFIG_ARG} \
                                         --step push-container-image
-                                """
-                            }
-                        }
-                    }
-                    stage('CI: Sign Container Image') {
-                        steps {
-                            container("${WORKFLOW_WORKER_NAME_CONTAINER_OPERATIONS}") {
-                                sh """
-                                    if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
-                                    set -eu -o pipefail
-
-                                    source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
-                                    psr \
-                                        --config ${PSR_CONFIG_ARG} \
-                                        --step sign-container-image
                                 """
                             }
                         }
@@ -762,22 +698,6 @@ def call(Map paramsMap) {
                                     psr \
                                         --config ${PSR_CONFIG_ARG} \
                                         --step deploy \
-                                        --environment ${params.envNameDev}
-                                """
-                            }
-                        }
-                    }
-                    stage("DEV: Validate Environment Configuration") {
-                        steps {
-                            container("${WORKFLOW_WORKER_NAME_VALIDATE_ENVIRONMENT_CONFIGURATION}") {
-                                sh """
-                                    if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
-                                    set -eu -o pipefail
-
-                                    source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
-                                    psr \
-                                        --config ${PSR_CONFIG_ARG} \
-                                        --step validate-environment-configuration \
                                         --environment ${params.envNameDev}
                                 """
                             }
@@ -834,22 +754,6 @@ def call(Map paramsMap) {
                             }
                         }
                     }
-                    stage('TEST: Validate Environment Configuration') {
-                        steps {
-                            container("${WORKFLOW_WORKER_NAME_VALIDATE_ENVIRONMENT_CONFIGURATION}") {
-                                sh """
-                                    if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
-                                    set -eu -o pipefail
-
-                                    source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
-                                    psr \
-                                        --config ${PSR_CONFIG_ARG} \
-                                        --step validate-environment-configuration \
-                                        --environment ${params.envNameTest}
-                                """
-                            }
-                        }
-                    }
                     stage('Run User Acceptance Tests') {
                         steps {
                             container("${WORKFLOW_WORKER_NAME_UAT}") {
@@ -896,22 +800,6 @@ def call(Map paramsMap) {
                                     psr \
                                         --config ${PSR_CONFIG_ARG} \
                                         --step deploy \
-                                        --environment ${params.envNameProd}
-                                """
-                            }
-                        }
-                    }
-                    stage('PROD: Validate Environment Configuration') {
-                        steps {
-                            container("${WORKFLOW_WORKER_NAME_VALIDATE_ENVIRONMENT_CONFIGURATION}") {
-                                sh """
-                                    if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
-                                    set -eu -o pipefail
-
-                                    source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
-                                    psr \
-                                        --config ${PSR_CONFIG_ARG} \
-                                        --step validate-environment-configuration \
                                         --environment ${params.envNameProd}
                                 """
                             }
