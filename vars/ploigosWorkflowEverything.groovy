@@ -728,6 +728,24 @@ def call(Map paramsMap) {
                             }
                         }
                     }
+
+   		    // CI Generate Evidence
+                    stage('CI: Generate Evidence') {
+                        steps {
+                            container("${WORKFLOW_WORKER_NAME_VALIDATE_ENVIRONMENT_CONFIGURATION}") {
+                                sh """
+                                    if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
+                                    set -eu -o pipefail
+
+                                    source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
+                                    psr \
+                                        --config ${PSR_CONFIG_ARG} \
+                                        --step generate-evidence \
+                                        --environment ${params.envNameProd}
+                                """
+                            }   
+                      }
+                }
                 }
             } // CI Stages
 
@@ -795,6 +813,24 @@ def call(Map paramsMap) {
                             }
                         }
                     }
+             	    // DEV Generate Evidence
+                    stage('DEV: Generate Evidence') {
+                        steps {
+                            container("${WORKFLOW_WORKER_NAME_VALIDATE_ENVIRONMENT_CONFIGURATION}") {
+                                sh """
+                                    if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
+                                    set -eu -o pipefail
+
+                                    source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
+                                    psr \
+                                        --config ${PSR_CONFIG_ARG} \
+                                        --step generate-evidence \
+                                        --environment ${params.envNameProd}
+                                """
+                            }   
+                      }
+                }
+
                 }
             } // DEV Stage
 
@@ -862,6 +898,23 @@ def call(Map paramsMap) {
                             }
                         }
                     }
+		    // TEST Generate Evidence
+                    stage('TEST: Generate Evidence') {
+                        steps {
+                            container("${WORKFLOW_WORKER_NAME_VALIDATE_ENVIRONMENT_CONFIGURATION}") {
+                                sh """
+                                    if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
+                                    set -eu -o pipefail
+
+                                    source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
+                                    psr \
+                                        --config ${PSR_CONFIG_ARG} \
+                                        --step generate-evidence \
+                                        --environment ${params.envNameProd}
+                                """
+                            }   
+                      }
+                }
                 }
             } // TEST Stage
 
@@ -913,7 +966,24 @@ def call(Map paramsMap) {
                             }
                         }
                     }
+		    // PROD Generate Evidence
+		    stage('PROD: Generate Evidence') {
+                        steps {
+                            container("${WORKFLOW_WORKER_NAME_VALIDATE_ENVIRONMENT_CONFIGURATION}") {
+                                sh """
+                                    if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
+                                    set -eu -o pipefail
+
+                                    source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
+                                    psr \
+                                        --config ${PSR_CONFIG_ARG} \
+                                        --step generate-evidence \
+                                        --environment ${params.envNameProd}
+                                """
+                            }	
+		      }
                 }
+
             } // PROD Stage
         } // stages
         post {
