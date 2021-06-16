@@ -744,9 +744,9 @@ def call(Map paramsMap) {
                                         --environment ${params.envNameProd}
                                 """
                             }   
-                      }
-                }
-                }
+                        }
+                   }
+               } 
             } // CI Stages
 
             stage('DEV') {
@@ -828,10 +828,9 @@ def call(Map paramsMap) {
                                         --environment ${params.envNameProd}
                                 """
                             }   
-                      }
-                }
-
-                }
+                        }
+                    }
+		}
             } // DEV Stage
 
             stage('TEST') {
@@ -912,10 +911,10 @@ def call(Map paramsMap) {
                                         --step generate-evidence \
                                         --environment ${params.envNameProd}
                                 """
-                            }   
-                      }
-                }
-                }
+                           }   
+                       }
+                   }
+               }
             } // TEST Stage
 
             stage('PROD') {
@@ -981,9 +980,9 @@ def call(Map paramsMap) {
                                         --environment ${params.envNameProd}
                                 """
                             }	
-		      }
-                }
-
+		        }
+                   }
+               }
             } // PROD Stage
         } // stages
         post {
