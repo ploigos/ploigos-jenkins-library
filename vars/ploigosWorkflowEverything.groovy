@@ -740,8 +740,7 @@ def call(Map paramsMap) {
                                     source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
                                     psr \
                                         --config ${PSR_CONFIG_ARG} \
-                                        --step generate-evidence \
-                                        --environment ${params.envNameProd}
+                                        --step generate-evidence
                                 """
                             }   
                         }
@@ -825,7 +824,7 @@ def call(Map paramsMap) {
                                     psr \
                                         --config ${PSR_CONFIG_ARG} \
                                         --step generate-evidence \
-                                        --environment ${params.envNameProd}
+                                        --environment ${params.envNameDev}
                                 """
                             }   
                         }
@@ -909,7 +908,7 @@ def call(Map paramsMap) {
                                     psr \
                                         --config ${PSR_CONFIG_ARG} \
                                         --step generate-evidence \
-                                        --environment ${params.envNameProd}
+                                        --environment ${params.envNameTest}
                                 """
                            }   
                        }
