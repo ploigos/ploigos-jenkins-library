@@ -728,11 +728,10 @@ def call(Map paramsMap) {
                             }
                         }
                     }
-
-   		    // CI Generate Evidence
+   		            // CI Generate Evidence
                     stage('CI: Generate Evidence') {
                         steps {
-                            container("${WORKFLOW_WORKER_NAME_VALIDATE_ENVIRONMENT_CONFIGURATION}") {
+                            container("${WORKFLOW_WORKER_NAME_DEFAULT}") {
                                 sh """
                                     if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
                                     set -eu -o pipefail
@@ -742,10 +741,10 @@ def call(Map paramsMap) {
                                         --config ${PSR_CONFIG_ARG} \
                                         --step generate-evidence
                                 """
-                            }   
+                            }
                         }
                    }
-               } 
+               }
             } // CI Stages
 
             stage('DEV') {
@@ -815,7 +814,7 @@ def call(Map paramsMap) {
              	    // DEV Generate Evidence
                     stage('DEV: Generate Evidence') {
                         steps {
-                            container("${WORKFLOW_WORKER_NAME_VALIDATE_ENVIRONMENT_CONFIGURATION}") {
+                            container("${WORKFLOW_WORKER_NAME_DEFAULT}") {
                                 sh """
                                     if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
                                     set -eu -o pipefail
@@ -826,10 +825,10 @@ def call(Map paramsMap) {
                                         --step generate-evidence \
                                         --environment ${params.envNameDev}
                                 """
-                            }   
+                            }
                         }
                     }
-		}
+		        }
             } // DEV Stage
 
             stage('TEST') {
@@ -896,10 +895,10 @@ def call(Map paramsMap) {
                             }
                         }
                     }
-		    // TEST Generate Evidence
+		            // TEST Generate Evidence
                     stage('TEST: Generate Evidence') {
                         steps {
-                            container("${WORKFLOW_WORKER_NAME_VALIDATE_ENVIRONMENT_CONFIGURATION}") {
+                            container("${WORKFLOW_WORKER_NAME_DEFAULT}") {
                                 sh """
                                     if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
                                     set -eu -o pipefail
@@ -910,7 +909,7 @@ def call(Map paramsMap) {
                                         --step generate-evidence \
                                         --environment ${params.envNameTest}
                                 """
-                           }   
+                           }
                        }
                    }
                }
@@ -964,10 +963,10 @@ def call(Map paramsMap) {
                             }
                         }
                     }
-		    // PROD Generate Evidence
-		    stage('PROD: Generate Evidence') {
+		            // PROD Generate Evidence
+		            stage('PROD: Generate Evidence') {
                         steps {
-                            container("${WORKFLOW_WORKER_NAME_VALIDATE_ENVIRONMENT_CONFIGURATION}") {
+                            container("${WORKFLOW_WORKER_NAME_DEFAULT}") {
                                 sh """
                                     if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
                                     set -eu -o pipefail
@@ -978,8 +977,8 @@ def call(Map paramsMap) {
                                         --step generate-evidence \
                                         --environment ${params.envNameProd}
                                 """
-                            }	
-		        }
+                            }
+		                }
                    }
                }
             } // PROD Stage
