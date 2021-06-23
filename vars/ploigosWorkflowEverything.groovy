@@ -728,7 +728,7 @@ def call(Map paramsMap) {
                             }
                         }
                     }
-   		            // CI Generate Evidence
+                       // CI Generate Evidence
                     stage('CI: Generate Evidence') {
                         steps {
                             container("${WORKFLOW_WORKER_NAME_DEFAULT}") {
@@ -811,7 +811,7 @@ def call(Map paramsMap) {
                             }
                         }
                     }
-             	    // DEV Generate Evidence
+                     // DEV Generate Evidence
                     stage('DEV: Generate Evidence') {
                         steps {
                             container("${WORKFLOW_WORKER_NAME_DEFAULT}") {
@@ -828,7 +828,7 @@ def call(Map paramsMap) {
                             }
                         }
                     }
-		        }
+                }
             } // DEV Stage
 
             stage('TEST') {
@@ -895,7 +895,7 @@ def call(Map paramsMap) {
                             }
                         }
                     }
-		            // TEST Generate Evidence
+                    // TEST Generate Evidence
                     stage('TEST: Generate Evidence') {
                         steps {
                             container("${WORKFLOW_WORKER_NAME_DEFAULT}") {
@@ -963,8 +963,8 @@ def call(Map paramsMap) {
                             }
                         }
                     }
-		            // PROD Generate Evidence
-		            stage('PROD: Generate Evidence') {
+                    // PROD Generate Evidence
+                    stage('PROD: Generate Evidence') {
                         steps {
                             container("${WORKFLOW_WORKER_NAME_DEFAULT}") {
                                 sh """
@@ -978,7 +978,7 @@ def call(Map paramsMap) {
                                         --environment ${params.envNameProd}
                                 """
                             }
-		                }
+                        }
                    }
                }
             } // PROD Stage
