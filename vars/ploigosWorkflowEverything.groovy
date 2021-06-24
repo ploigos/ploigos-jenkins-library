@@ -117,22 +117,6 @@ class WorkflowParams implements Serializable {
      * for installation. */
     boolean stepRunnerLibSourceGitTLSNoVerify = false
 
-    /* The UID to run the workflow worker containers as.
-     *
-     * IMPORTANT:
-     *  From experimentation this NEEDS be a UID that exists in the worker container images.
-     *  This is due to limitations of how subuid, subgid, and namespaces work
-     *  and their appropriate ranges not being created for random UID is not created
-     *  with `useradd` and how that interacts with `buildah unshare` for rootless
-     *  container builds within a container.
-     *
-     * NOTE:
-     *  The quay.io/ploigos/ploigos-base image uses UID 1001 but if you don't like that UID
-     *  then you can use https://github.com/ploigos/ploigos-containers to create custom
-     *  versions of the Ploigos workflow containers and passing in the container ARG
-     * `PLOIGOS_USER_UID` to change the UID. */
-    int workflowWorkerRunAsUser = 1001
-
     /* Policy for pulling new versions of the imageTag for the CI worker images
      * when running this pipeline. */
     String workflowWorkersImagePullPolicy = 'IfNotPresent'
@@ -191,21 +175,14 @@ class WorkflowParams implements Serializable {
      * IMPORTANT
      * ---------
      * This Kubernetes ServiceAccount needs to have access (via RoleBinding to Role)
-     * to a SecurityContextConstraints that can runAsUser workflowWorkerRunAsUser.
+     * to a SecurityContextConstraints that can use the following capabilities to be
+     * able to perform rootless container builds.
      *
-     * EXAMPLE SecurityContextConstraints:
-     *      kind: SecurityContextConstraints
-     *      apiVersion: security.openshift.io/v1
-     *      metadata:
-     *      annotations:
-     *          kubernetes.io/description: TODO
-     *       name: run-as-user-${workflowWorkerRunAsUser}
-     *       runAsUser:
-     *       type: MustRunAsRange
-     *       uidRangeMax: ${workflowWorkerRunAsUser}
-     *       uidRangeMin: ${workflowWorkerRunAsUser}
-     *       seLinuxContext:
-     *       type: MustRunAsm */
+     *   - SETUID
+     *   - SETGID
+     *
+     * EXAMPLE SecurityContextConstraints: TODO LINK
+     */
     String workflowServiceAccountName = 'jenkins'
 
     /* Flag indicating that platform-level configuration is separated from
@@ -329,9 +306,6 @@ def call(Map paramsMap) {
             jenkins-build-id: ${env.BUILD_ID}
     spec:
         serviceAccount: ${params.workflowServiceAccountName}
-        securityContext:
-            runAsUser: ${params.workflowWorkerRunAsUser}
-            fsGroup: ${params.workflowWorkerRunAsUser}
         containers:
         - name: ${WORKFLOW_WORKER_NAME_DEFAULT}
           image: "${params.workflowWorkerImageDefault}"
@@ -348,7 +322,6 @@ def call(Map paramsMap) {
           image: "${params.workflowWorkerImageUnitTest}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
           tty: true
-          command: ['sh', '-c', 'update-ca-trust && cat']
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
@@ -358,7 +331,6 @@ def call(Map paramsMap) {
           image: "${params.workflowWorkerImagePackage}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
           tty: true
-          command: ['sh', '-c', 'update-ca-trust && cat']
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
@@ -368,7 +340,6 @@ def call(Map paramsMap) {
           image: "${params.workflowWorkerImageStaticCodeAnalysis}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
           tty: true
-          command: ['sh', '-c', 'update-ca-trust && cat']
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
@@ -378,7 +349,6 @@ def call(Map paramsMap) {
           image: "${params.workflowWorkerImagePushArtifacts}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
           tty: true
-          command: ['sh', '-c', 'update-ca-trust && cat']
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
@@ -388,7 +358,11 @@ def call(Map paramsMap) {
           image: "${params.workflowWorkerImageContainerOperations}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
           tty: true
-          command: ['sh', '-c', 'update-ca-trust && cat']
+          securityContext:
+            capabilities:
+                add:
+                - 'SETUID'
+                - 'SETGID'
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
@@ -398,7 +372,6 @@ def call(Map paramsMap) {
           image: "${params.workflowWorkerImageContainerImageStaticComplianceScan}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
           tty: true
-          command: ['sh', '-c', 'update-ca-trust && cat']
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
@@ -408,7 +381,6 @@ def call(Map paramsMap) {
           image: "${params.workflowWorkerImageContainerImageStaticVulnerabilityScan}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
           tty: true
-          command: ['sh', '-c', 'update-ca-trust && cat']
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
@@ -418,7 +390,6 @@ def call(Map paramsMap) {
           image: "${params.workflowWorkerImageDeploy}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
           tty: true
-          command: ['sh', '-c', 'update-ca-trust && cat']
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
@@ -428,7 +399,6 @@ def call(Map paramsMap) {
           image: "${params.workflowWorkerImageValidateEnvironmentConfiguration}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
           tty: true
-          command: ['sh', '-c', 'update-ca-trust && cat']
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
@@ -438,7 +408,6 @@ def call(Map paramsMap) {
           image: "${params.workflowWorkerImageUAT}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
           tty: true
-          command: ['sh', '-c', 'update-ca-trust && cat']
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
@@ -448,7 +417,6 @@ def call(Map paramsMap) {
           image: "${params.workflowWorkerAutomatedGovernance}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
           tty: true
-          command: ['sh', '-c', 'update-ca-trust && cat']
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
