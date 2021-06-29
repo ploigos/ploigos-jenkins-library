@@ -405,9 +405,16 @@ can be scanned.
 
 ### Examples
 
-#### Use Ploigos Step Runner from embedded binary
+#### Parameterized Build
 **NOTE:** Assumes container platform is configured with container image search path that can find
 the Ploigos workflow worker images by short name. EX, quay.io is on the container image search path.
+
+This example assumes a Parameterized Jenkins Job has been created with the following parameters:
+
+* registryRUL
+* imageOrg
+* imageName
+* imageTag
 
 ```
 // Load the Ploigos Jenkins Library
@@ -419,43 +426,14 @@ retriever: modernSCM([
 
 // run the pipeline
 ploigosWorkflowExistingContainerImageScan(
-    stepRunnerConfigDir: 'cicd/ploigos-step-runner-config/',
-    pgpKeysSecretName: 'pgp-keys-ploigos-workflow-ref-quarkus-mvn-jenkins-std-fruit',
+    stepRunnerConfigDir: 'ploigos-step-runner-config/',
 
-    workflowServiceAccountName: 'ploigos-workflow-ref-quarkus-mvn-jenkins-std-fruit',
+    pgpKeysSecretName: 'pgp-keys-ploigos-workflow-ref-quarkus-mvn-jenkins-min-fruit',
+    workflowServiceAccountName: 'ploigos-workflow-ref-quarkus-mvn-jenkins-min-fruit',
 
-    workflowWorkerImageDefault: 'ploigos/ploigos-ci-agent-jenkins:v1.0.0',
-    workflowWorkerImageContainerOperations: 'ploigos/ploigos-tool-containers:v1.0.0',
-    workflowWorkerImageContainerImageStaticComplianceScan: 'ploigos/ploigos-tool-openscap:v1.0.0',
-    workflowWorkerImageContainerImageStaticVulnerabilityScan: 'ploigos/ploigos-tool-openscap:v1.0.0'
-)
-```
-
-#### Use Ploigos Step Runner from source
-**NOTE:** Assumes container platform is configured with container image search path that can find
-the Ploigos workflow worker images by short name. EX, quay.io is on the container image search path.
-
-```
-// Load the Ploigos Jenkins Library
-library identifier: 'ploigos-jenkins-library@v1.0.0',
-retriever: modernSCM([
-    $class: 'GitSCMSource',
-    remote: 'https://github.com/ploigos/ploigos-jenkins-library.git'
-])
-
-// run the pipeline
-ploigosWorkflowStandard(
-    stepRunnerConfigDir: 'cicd/ploigos-step-runner-config/',
-    pgpKeysSecretName: 'pgp-keys-ploigos-workflow-ref-quarkus-mvn-jenkins-std-fruit',
-
-    workflowServiceAccountName: 'ploigos-workflow-ref-quarkus-mvn-jenkins-std-fruit',
-
-    workflowWorkerImageDefault: 'ploigos/ploigos-ci-agent-jenkins:v1.0.0',
-    workflowWorkerImageContainerOperations: 'ploigos/ploigos-tool-containers:v1.0.0',
-    workflowWorkerImageContainerImageStaticComplianceScan: 'ploigos/ploigos-tool-openscap:v1.0.0',
-    workflowWorkerImageContainerImageStaticVulnerabilityScan: 'ploigos/ploigos-tool-openscap:v1.0.0'
-
-    stepRunnerUpdateLibrary: true,
-    stepRunnerLibSourceUrl: "git+https://github.com/ploigos/ploigos-step-runner.git@main"
+    registryURL: params.registryRUL,
+    imageOrg: params.imageOrg,
+    imageName: params.imageName,
+    imageTag: params.imageTag
 )
 ```

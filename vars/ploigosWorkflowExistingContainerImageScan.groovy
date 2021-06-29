@@ -246,7 +246,12 @@ def call(Map paramsMap) {
         "${PLATFORM_CONFIG_DIR} ${params.stepRunnerConfigDir}" : "${params.stepRunnerConfigDir}"
 
     /* Verify and setup the Image_Target for this container scan. */
-    String IMAGE_TARGET = "${params.imageOrg}/${params.imageName}:${params.imageTag}"
+    String IMAGE_TARGET = ""
+    if (params.imageOrg) {
+        IMAGE_TARGET = "${params.imageOrg}/${params.imageName}:${params.imageTag}"
+    } else {
+        IMAGE_TARGET = "${params.imageName}:${params.imageTag}"
+    }
 
     pipeline {
         options {
@@ -291,6 +296,11 @@ def call(Map paramsMap) {
           image: "${params.workflowWorkerImageContainerOperations}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
           tty: true
+          securityContext:
+            capabilities:
+              add:
+              - 'SETUID'
+              - 'SETGID'
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
             name: home-ploigos
@@ -435,20 +445,40 @@ def call(Map paramsMap) {
             stage('Continuous Integration') {
                 stages {
                     stage('CI: Pull Container Image') {
-                        steps {
-                            container("${WORKFLOW_WORKER_NAME_CONTAINER_OPERATIONS}") {
-	                    	withCredentials([usernamePassword(credentialsId: "${params.registryCredentialName}", usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
-                                    sh """
-                                        if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
-                                        set -eu -o pipefail
+                        parallel {
+                            stage('CI: Pull Container Image (authed)') {
+                                when { expression { return params.registryCredentialName != null && params.registryCredentialName.trim() != '' }}
+                                steps {
+                                    container("${WORKFLOW_WORKER_NAME_CONTAINER_OPERATIONS}") {
+                                        withCredentials([usernamePassword(credentialsId: "${params.registryCredentialName}", usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
+                                            sh """
+                                                if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
+                                                set -eu -o pipefail
 
-				                        buildah pull --storage-driver=vfs --creds=${REGISTRY_USERNAME}:${REGISTRY_PASSWORD} ${params.registryURL}/${IMAGE_TARGET}
-				                        buildah push --storage-driver=vfs ${params.registryURL}/${IMAGE_TARGET} docker-archive:/home/ploigos/${params.imageName}.tar
-                                   """
-                                } //WithCredentials
-			    }
+                                                buildah pull --storage-driver=vfs --creds=${REGISTRY_USERNAME}:${REGISTRY_PASSWORD} ${params.registryURL}/${IMAGE_TARGET}
+                                                buildah push --storage-driver=vfs --remove-signatures ${params.registryURL}/${IMAGE_TARGET} docker-archive:/home/ploigos/${params.imageName}.tar
+                                            """
+                                        } //WithCredentials
+                                    }
+                                }
+                            }
+                            stage('CI: Pull Container Image (not authed)') {
+                                when { expression { return params.registryCredentialName == null || params.registryCredentialName.trim() == '' }}
+                                steps {
+                                    container("${WORKFLOW_WORKER_NAME_CONTAINER_OPERATIONS}") {
+                                        sh """
+                                            if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
+                                            set -eu -o pipefail
+
+                                            buildah pull --storage-driver=vfs ${params.registryURL}/${IMAGE_TARGET}
+                                            buildah push --storage-driver=vfs --remove-signatures ${params.registryURL}/${IMAGE_TARGET} docker-archive:/home/ploigos/${params.imageName}.tar
+                                        """
+                                    }
+                                }
+                            }
                         }
                     }
+
                     stage('CI: Static Image Scan') {
                         parallel {
                             stage('CI: Static Image Scan: Compliance') {
@@ -497,9 +527,15 @@ def call(Map paramsMap) {
                         set -eu -o pipefail
 
                         source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
+                        # NOTE: only passing service-name becasue its currently a required value
                         psr \
                             --config ${PSR_CONFIG_ARG} \
-                            --step report
+                            --step report \
+                            --step-config \
+                                organization=${params.imageOrg} \
+                                application-name=${params.imageName} \
+                                service-name='' \
+                                version=${params.imageTag}
                     """
                     archiveArtifacts artifacts: 'step-runner-working/report/*.zip', fingerprint: true
                 }
