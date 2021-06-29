@@ -168,7 +168,7 @@ class WorkflowParams implements Serializable {
 
     /* Container image to use when creating a workflow worker
      * to run pipeline steps when performing automated-governance step(s). */
-    String workflowWorkerAutomatedGovernance = "ploigos/ploigos-tool-rekor:latest"
+    String workflowWorkerImageAutomatedGovernance = "ploigos/ploigos-tool-rekor:latest"
 
     /* Kubernetes ServiceAccount that the Jenkins Worker Kubernetes Pod should be deployed with.
      *
@@ -414,7 +414,7 @@ def call(Map paramsMap) {
           ${PLATFORM_MOUNTS}
           ${TLS_MOUNTS}
         - name: ${WORKFLOW_WORKER_NAME_AUTOMATED_GOVERNANCE}
-          image: "${params.workflowWorkerAutomatedGovernance}"
+          image: "${params.workflowWorkerImageAutomatedGovernance}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
           tty: true
           volumeMounts:
