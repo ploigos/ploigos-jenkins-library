@@ -168,7 +168,7 @@ class WorkflowParams implements Serializable {
 
     /* Container image to use when creating a workflow worker
      * to run pipeline steps when performing automated-governance step(s). */
-    String workflowWorkerImageAutomatedGovernance = "ploigos/ploigos-tool-rekor:latest"
+    String workflowWorkerImageAutomatedGovernance = "ploigos/ploigos-tool-autogov:latest"
 
     /* Kubernetes ServiceAccount that the Jenkins Worker Kubernetes Pod should be deployed with.
      *
@@ -713,7 +713,7 @@ def call(Map paramsMap) {
                             }
                         }
                     }
-                       // CI Generate Evidence
+                    // CI Generate Evidence
                     stage('CI: Generate Evidence') {
                         steps {
                             container("${WORKFLOW_WORKER_NAME_AUTOMATED_GOVERNANCE}") {
@@ -728,7 +728,7 @@ def call(Map paramsMap) {
                                 """
                             }
                         }
-                   }
+                    }
                }
             } // CI Stages
 
@@ -809,6 +809,23 @@ def call(Map paramsMap) {
                                         --config ${PSR_CONFIG_ARG} \
                                         --step generate-evidence \
                                         --environment ${params.envNameDev}
+                                """
+                            }
+                        }
+                    }
+
+		    // DEV Audit Attestation
+                    stage('DEV: Audit Attestation') {
+                        steps {
+                            container("${WORKFLOW_WORKER_NAME_AUTOMATED_GOVERNANCE}") {
+                                sh """
+                                    if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
+                                    set -eu -o pipefail
+
+                                    source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
+                                    psr \
+                                        --config ${PSR_CONFIG_ARG} \
+                                        --step audit-attestation
                                 """
                             }
                         }
