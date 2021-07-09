@@ -748,6 +748,23 @@ def call(Map paramsMap) {
                     }
                 }
                 stages {
+		    // DEV Audit Attestation
+                    stage('DEV: Audit Attestation') {
+                        steps {
+                            container("${WORKFLOW_WORKER_NAME_AUTOMATED_GOVERNANCE}") {
+                                sh """
+                                    if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
+                                    set -eu -o pipefail
+
+                                    source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
+                                    psr \
+                                        --config ${PSR_CONFIG_ARG} \
+                                        --step audit-attestation \
+                                        --environment ${params.envNameDev}
+                                """
+                            }
+                        }
+                    }
                     stage("DEV: Deploy or Update Environment") {
                         steps {
                             container("${WORKFLOW_WORKER_NAME_DEPLOY}") {
@@ -813,23 +830,6 @@ def call(Map paramsMap) {
                             }
                         }
                     }
-
-		    // DEV Audit Attestation
-                    stage('DEV: Audit Attestation') {
-                        steps {
-                            container("${WORKFLOW_WORKER_NAME_AUTOMATED_GOVERNANCE}") {
-                                sh """
-                                    if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
-                                    set -eu -o pipefail
-
-                                    source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
-                                    psr \
-                                        --config ${PSR_CONFIG_ARG} \
-                                        --step audit-attestation
-                                """
-                            }
-                        }
-                    }
                 }
             } // DEV Stage
 
@@ -848,7 +848,25 @@ def call(Map paramsMap) {
                         return result
                     }
                 }
+
                 stages {
+		    // TEST Audit Attestation
+                    stage('TEST: Audit Attestation') {
+                        steps {
+                            container("${WORKFLOW_WORKER_NAME_AUTOMATED_GOVERNANCE}") {
+                                sh """
+                                    if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
+                                    set -eu -o pipefail
+
+                                    source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
+                                    psr \
+                                        --config ${PSR_CONFIG_ARG} \
+                                        --step audit-attestation \
+                                        --environment ${params.envNameTest}
+                                """
+                            }
+                        }
+                    }
                     stage('TEST: Deploy or Update Environment') {
                         steps {
                             container("${WORKFLOW_WORKER_NAME_DEPLOY}") {
@@ -933,6 +951,23 @@ def call(Map paramsMap) {
                     }
                 }
                 stages {
+		    // PROD Audit Attestation
+                    stage('PROD: Audit Attestation') {
+                        steps {
+                            container("${WORKFLOW_WORKER_NAME_AUTOMATED_GOVERNANCE}") {
+                                sh """
+                                    if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
+                                    set -eu -o pipefail
+
+                                    source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
+                                    psr \
+                                        --config ${PSR_CONFIG_ARG} \
+                                        --step audit-attestation \
+                                        --environment ${params.envNameProd}
+                                """
+                            }
+                        }
+                    }
                     stage('PROD: Deploy or Update Environment') {
                         steps {
                             container("${WORKFLOW_WORKER_NAME_DEPLOY}") {
