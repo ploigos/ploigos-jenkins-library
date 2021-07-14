@@ -121,10 +121,15 @@ class WorkflowParams implements Serializable {
      * when running this pipeline. */
     String workflowWorkersImagePullPolicy = 'IfNotPresent'
 
+     /* Container image to use when creating a workflow worker
+     * to run pipeline steps when no other specific container image has been
+     * specified for that step. */
+    String workflowWorkerImageDefault = "ploigos/ploigos-base:latest"
+
     /* Container image to use when creating a workflow worker
      * to run pipeline steps when no other specific container image has been
      * specified for that step. */
-    String workflowWorkerImageDefault = "ploigos/ploigos-ci-agent-jenkins:latest"
+    String workflowWorkerImageAgent = "ploigos/ploigos-ci-agent-jenkins:latest"
 
     /* Container image to use when creating a workflow worker
      * to run pipeline steps when performing unit test step(s). */
@@ -208,7 +213,8 @@ def call(Map paramsMap) {
         .replaceAll(KUBE_LABEL_NOT_SAFE_CHARS_REGEX, '-')
         .drop(GIT_REPO_NAME.length()-KUBE_LABEL_MAX_LENGTH)
 
-    String WORKFLOW_WORKER_NAME_DEFAULT              = 'jnlp'
+    String WORKFLOW_WORKER_NAME_DEFAULT              = 'default'
+    String WORKFLOW_WORKER_NAME_AGENT                = 'jnlp'
     String WORKFLOW_WORKER_NAME_UNIT_TEST            = 'unit-test'
     String WORKFLOW_WORKER_NAME_PACKAGE              = 'package'
     String WORKFLOW_WORKER_NAME_STATIC_CODE_ANALYSIS = 'static-code-analysis'
@@ -294,6 +300,17 @@ def call(Map paramsMap) {
         containers:
         - name: ${WORKFLOW_WORKER_NAME_DEFAULT}
           image: "${params.workflowWorkerImageDefault}"
+          imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
+          tty: true
+          volumeMounts:
+          - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
+            name: home-ploigos
+          - mountPath: /var/pgp-private-keys
+            name: pgp-private-keys
+          ${PLATFORM_MOUNTS}
+          ${TLS_MOUNTS}
+        - name: ${WORKFLOW_WORKER_NAME_AGENT}
+          image: "${params.workflowWorkerImageAgent}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
           tty: true
           volumeMounts:
