@@ -127,8 +127,7 @@ class WorkflowParams implements Serializable {
     String workflowWorkerImageDefault = "ploigos/ploigos-base:latest"
 
     /* Container image to use when creating a workflow worker
-     * to run pipeline steps when no other specific container image has been
-     * specified for that step. */
+     * to run pipeline steps for connecting to CI tool */
     String workflowWorkerImageAgent = "ploigos/ploigos-ci-agent-jenkins:latest"
 
     /* Container image to use when creating a workflow worker
