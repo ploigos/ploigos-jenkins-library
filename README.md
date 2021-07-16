@@ -75,7 +75,7 @@ the Everything workflow as needed by your team.
 | stepRunnerLibSourceGitTLSNoVerify | `false`                       | If `stepRunnerUpdateLibrary` is true and `stepRunnerLibSourceUrl` is specified this value determines whether to verify the Git TLS when checking out the step runner library source for installation.
 | workflowWorkersImagePullPolicy    | `'IfNotPresent'`              | Policy for pulling new versions of the imageTag for the CI worker images when running this pipeline.
 | workflowWorkerImageDefault        | `'ploigos/ploigos-base:latest'` | Container image to use when creating a workflow worker to run pipeline steps when no other specific container image has been specified for that step.
-| workflowWorkerImageAgent        | `'ploigos/ploigos-ci-agent-jenkins:latest'` | Container image to use when creating a workflow worker to run pipeline steps when no other specific container image has been specified for that step.
+| workflowWorkerImageAgent        | `'ploigos/ploigos-ci-agent-jenkins:latest'` | Container image to use when creating a workflow worker to run pipeline steps for connecting to the CI tool.
 | workflowWorkerImagePackage        |                               | Container image to use when creating a workflow worker to run pipeline steps when performing package application step(s).
 | workflowWorkerImageContainerOperations | `'ploigos/ploigos-tool-containers:latest'` | Container image to use when creating a workflow worker to run pipeline steps when performing container operations (build/push/etc) step(s).
 | workflowWorkerImageDeploy         | `'ploigos/ploigos-tool-argocd:latest'` | Container image to use when creating a workflow worker to run pipeline steps when performing deploy step(s).
