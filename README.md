@@ -98,7 +98,7 @@ retriever: modernSCM([
 ])
 
 // run the pipeline
-ploigosWorkflowStandard(
+ploigosWorkflowMinimal(
     stepRunnerConfigDir: 'cicd/ploigos-step-runner-config/',
     pgpKeysSecretName: 'pgp-keys-ploigos-workflow-ref-quarkus-mvn-jenkins-std-fruit',
 
@@ -124,7 +124,7 @@ retriever: modernSCM([
 ])
 
 // run the pipeline
-ploigosWorkflowStandard(
+ploigosWorkflowMinimal(
     stepRunnerConfigDir: 'cicd/ploigos-step-runner-config/',
     pgpKeysSecretName: 'pgp-keys-ploigos-workflow-ref-quarkus-mvn-jenkins-std-fruit',
 
@@ -196,7 +196,7 @@ retriever: modernSCM([
 ])
 
 // run the pipeline
-ploigosWorkflowStandard(
+ploigosWorkflowTypical(
     stepRunnerConfigDir: 'cicd/ploigos-step-runner-config/',
     pgpKeysSecretName: 'pgp-keys-ploigos-workflow-ref-quarkus-mvn-jenkins-std-fruit',
 
@@ -227,7 +227,7 @@ retriever: modernSCM([
 ])
 
 // run the pipeline
-ploigosWorkflowStandard(
+ploigosWorkflowTypical(
     stepRunnerConfigDir: 'cicd/ploigos-step-runner-config/',
     pgpKeysSecretName: 'pgp-keys-ploigos-workflow-ref-quarkus-mvn-jenkins-std-fruit',
 
@@ -308,7 +308,7 @@ retriever: modernSCM([
 ])
 
 // run the pipeline
-ploigosWorkflowStandard(
+ploigosWorkflowEverything(
     stepRunnerConfigDir: 'cicd/ploigos-step-runner-config/',
     pgpKeysSecretName: 'pgp-keys-ploigos-workflow-ref-quarkus-mvn-jenkins-std-fruit',
 
@@ -341,7 +341,7 @@ retriever: modernSCM([
 ])
 
 // run the pipeline
-ploigosWorkflowStandard(
+ploigosWorkflowEverything(
     stepRunnerConfigDir: 'cicd/ploigos-step-runner-config/',
     pgpKeysSecretName: 'pgp-keys-ploigos-workflow-ref-quarkus-mvn-jenkins-std-fruit',
 
