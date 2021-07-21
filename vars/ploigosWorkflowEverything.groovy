@@ -285,9 +285,6 @@ def call(Map paramsMap) {
         - name: trusted-ca
           configMap:
             name: ${params.trustedCABundleConfigMapName}
-            items:
-            - key: ca-bundle.crt
-              path: tls-ca-bundle.pem
     """ : ""
 
     /* Combine this app's local config with platform-level config, if separatePlatformConfig == true */
