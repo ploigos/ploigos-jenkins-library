@@ -247,6 +247,9 @@ def call(Map paramsMap) {
     /* Name of the virtual environment to set up in the given home worksapce. */
     String WORKFLOW_WORKER_VENV_NAME = 'venv-ploigos'
 
+    /* Path to virtual python environment that PSR is in and/or will be installed into, must be on a persistent volume that can be shared between containers */
+    String WORKFLOW_WORKER_VENV_PATH = "${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}/${WORKFLOW_WORKER_VENV_NAME}"
+
     /* Directory into which platform configuration is mounted, if applicable */
     String PLATFORM_CONFIG_DIR = "/opt/platform-config"
 
@@ -461,7 +464,7 @@ def call(Map paramsMap) {
                             STEP_RUNNER_LIB_EXTRA_INDEX_URL = "${params.stepRunnerLibExtraIndexUrl}"
                             STEP_RUNNER_LIB_VERSION         = "${params.stepRunnerLibVersion}"
                             STEP_RUNNER_PACKAGE_NAME        = "${params.stepRunnerPackageName}"
-                            VENV_NAME                       = "${WORKFLOW_WORKER_VENV_NAME}"
+                            WORKFLOW_WORKER_VENV_PATH       = "${WORKFLOW_WORKER_VENV_PATH}"
                             VERBOSE                         = "${params.verbose}"
                         }
                         steps {
@@ -484,7 +487,7 @@ def call(Map paramsMap) {
                                         echo "**********************"
                                         echo "* Create Python venv *"
                                         echo "**********************"
-                                        python -m venv --system-site-packages --copies ${HOME}/${VENV_NAME}
+                                        python -m venv --system-site-packages --copies ${WORKFLOW_WORKER_VENV_PATH}
                                     '''
 
                                     sh '''
@@ -497,7 +500,7 @@ def call(Map paramsMap) {
                                             echo "* Update Python Pip *"
                                             echo "*********************"
 
-                                            source ${HOME}/${VENV_NAME}/bin/activate
+                                            source ${WORKFLOW_WORKER_VENV_PATH}/bin/activate
                                             python -m pip install --upgrade pip
 
                                             if [[ ${STEP_RUNNER_LIB_SOURCE_URL} ]]; then
@@ -564,7 +567,7 @@ def call(Map paramsMap) {
                                     if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
                                     set -eu -o pipefail
 
-                                    source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
+                                    source ${WORKFLOW_WORKER_VENV_PATH}/bin/activate
                                     psr \
                                         --config ${PSR_CONFIG_ARG} \
                                         --step generate-metadata
@@ -579,7 +582,7 @@ def call(Map paramsMap) {
                                     if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
                                     set -eu -o pipefail
 
-                                    source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
+                                    source ${WORKFLOW_WORKER_VENV_PATH}/bin/activate
                                     psr \
                                         --config ${PSR_CONFIG_ARG} \
                                         --step tag-source
@@ -594,7 +597,7 @@ def call(Map paramsMap) {
                                     if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
                                     set -eu -o pipefail
 
-                                    source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
+                                    source ${WORKFLOW_WORKER_VENV_PATH}/bin/activate
                                     psr \
                                         --config ${PSR_CONFIG_ARG} \
                                         --step unit-test
@@ -609,7 +612,7 @@ def call(Map paramsMap) {
                                     if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
                                     set -eu -o pipefail
 
-                                    source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
+                                    source ${WORKFLOW_WORKER_VENV_PATH}/bin/activate
                                     psr \
                                         --config ${PSR_CONFIG_ARG} \
                                         --step package
@@ -624,7 +627,7 @@ def call(Map paramsMap) {
                                     if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
                                     set -eu -o pipefail
 
-                                    source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
+                                    source ${WORKFLOW_WORKER_VENV_PATH}/bin/activate
                                     psr \
                                         --config ${PSR_CONFIG_ARG} \
                                         --step static-code-analysis
@@ -639,7 +642,7 @@ def call(Map paramsMap) {
                                     if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
                                     set -eu -o pipefail
 
-                                    source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
+                                    source ${WORKFLOW_WORKER_VENV_PATH}/bin/activate
                                     psr \
                                         --config ${PSR_CONFIG_ARG} \
                                         --step push-artifacts
@@ -654,7 +657,7 @@ def call(Map paramsMap) {
                                     if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
                                     set -eu -o pipefail
 
-                                    source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
+                                    source ${WORKFLOW_WORKER_VENV_PATH}/bin/activate
                                     psr \
                                         --config ${PSR_CONFIG_ARG} \
                                         --step create-container-image
@@ -671,7 +674,7 @@ def call(Map paramsMap) {
                                             if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
                                             set -eu -o pipefail
 
-                                            source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
+                                            source ${WORKFLOW_WORKER_VENV_PATH}/bin/activate
                                             psr \
                                                 --config ${PSR_CONFIG_ARG} \
                                                 --step container-image-static-compliance-scan
@@ -686,7 +689,7 @@ def call(Map paramsMap) {
                                             if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
                                             set -eu -o pipefail
 
-                                            source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
+                                            source ${WORKFLOW_WORKER_VENV_PATH}/bin/activate
                                             psr \
                                                 --config ${PSR_CONFIG_ARG} \
                                                 --step container-image-static-vulnerability-scan
@@ -703,7 +706,7 @@ def call(Map paramsMap) {
                                     if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
                                     set -eu -o pipefail
 
-                                    source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
+                                    source ${WORKFLOW_WORKER_VENV_PATH}/bin/activate
                                     psr \
                                         --config ${PSR_CONFIG_ARG} \
                                         --step push-container-image
@@ -718,7 +721,7 @@ def call(Map paramsMap) {
                                     if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
                                     set -eu -o pipefail
 
-                                    source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
+                                    source ${WORKFLOW_WORKER_VENV_PATH}/bin/activate
                                     psr \
                                         --config ${PSR_CONFIG_ARG} \
                                         --step sign-container-image
@@ -734,7 +737,7 @@ def call(Map paramsMap) {
                                     if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
                                     set -eu -o pipefail
 
-                                    source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
+                                    source ${WORKFLOW_WORKER_VENV_PATH}/bin/activate
                                     psr \
                                         --config ${PSR_CONFIG_ARG} \
                                         --step generate-evidence
@@ -769,7 +772,7 @@ def call(Map paramsMap) {
                                     if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
                                     set -eu -o pipefail
 
-                                    source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
+                                    source ${WORKFLOW_WORKER_VENV_PATH}/bin/activate
                                     psr \
                                         --config ${PSR_CONFIG_ARG} \
                                         --step audit-attestation \
@@ -785,7 +788,7 @@ def call(Map paramsMap) {
                                     if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
                                     set -eu -o pipefail
 
-                                    source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
+                                    source ${WORKFLOW_WORKER_VENV_PATH}/bin/activate
                                     psr \
                                         --config ${PSR_CONFIG_ARG} \
                                         --step deploy \
@@ -801,7 +804,7 @@ def call(Map paramsMap) {
                                     if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
                                     set -eu -o pipefail
 
-                                    source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
+                                    source ${WORKFLOW_WORKER_VENV_PATH}/bin/activate
                                     psr \
                                         --config ${PSR_CONFIG_ARG} \
                                         --step validate-environment-configuration \
@@ -817,7 +820,7 @@ def call(Map paramsMap) {
                                     if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
                                     set -eu -o pipefail
 
-                                    source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
+                                    source ${WORKFLOW_WORKER_VENV_PATH}/bin/activate
                                     psr \
                                         --config ${PSR_CONFIG_ARG} \
                                         --step uat \
@@ -834,7 +837,7 @@ def call(Map paramsMap) {
                                     if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
                                     set -eu -o pipefail
 
-                                    source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
+                                    source ${WORKFLOW_WORKER_VENV_PATH}/bin/activate
                                     psr \
                                         --config ${PSR_CONFIG_ARG} \
                                         --step generate-evidence \
@@ -871,7 +874,7 @@ def call(Map paramsMap) {
                                     if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
                                     set -eu -o pipefail
 
-                                    source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
+                                    source ${WORKFLOW_WORKER_VENV_PATH}/bin/activate
                                     psr \
                                         --config ${PSR_CONFIG_ARG} \
                                         --step audit-attestation \
@@ -887,7 +890,7 @@ def call(Map paramsMap) {
                                     if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
                                     set -eu -o pipefail
 
-                                    source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
+                                    source ${WORKFLOW_WORKER_VENV_PATH}/bin/activate
                                     psr \
                                         --config ${PSR_CONFIG_ARG} \
                                         --step deploy \
@@ -903,7 +906,7 @@ def call(Map paramsMap) {
                                     if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
                                     set -eu -o pipefail
 
-                                    source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
+                                    source ${WORKFLOW_WORKER_VENV_PATH}/bin/activate
                                     psr \
                                         --config ${PSR_CONFIG_ARG} \
                                         --step validate-environment-configuration \
@@ -919,7 +922,7 @@ def call(Map paramsMap) {
                                     if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
                                     set -eu -o pipefail
 
-                                    source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
+                                    source ${WORKFLOW_WORKER_VENV_PATH}/bin/activate
                                     psr \
                                         --config ${PSR_CONFIG_ARG} \
                                         --step uat \
@@ -936,7 +939,7 @@ def call(Map paramsMap) {
                                     if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
                                     set -eu -o pipefail
 
-                                    source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
+                                    source ${WORKFLOW_WORKER_VENV_PATH}/bin/activate
                                     psr \
                                         --config ${PSR_CONFIG_ARG} \
                                         --step generate-evidence \
@@ -972,7 +975,7 @@ def call(Map paramsMap) {
                                     if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
                                     set -eu -o pipefail
 
-                                    source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
+                                    source ${WORKFLOW_WORKER_VENV_PATH}/bin/activate
                                     psr \
                                         --config ${PSR_CONFIG_ARG} \
                                         --step audit-attestation \
@@ -988,7 +991,7 @@ def call(Map paramsMap) {
                                     if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
                                     set -eu -o pipefail
 
-                                    source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
+                                    source ${WORKFLOW_WORKER_VENV_PATH}/bin/activate
                                     psr \
                                         --config ${PSR_CONFIG_ARG} \
                                         --step deploy \
@@ -1004,7 +1007,7 @@ def call(Map paramsMap) {
                                     if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
                                     set -eu -o pipefail
 
-                                    source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
+                                    source ${WORKFLOW_WORKER_VENV_PATH}/bin/activate
                                     psr \
                                         --config ${PSR_CONFIG_ARG} \
                                         --step validate-environment-configuration \
@@ -1021,7 +1024,7 @@ def call(Map paramsMap) {
                                     if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
                                     set -eu -o pipefail
 
-                                    source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
+                                    source ${WORKFLOW_WORKER_VENV_PATH}/bin/activate
                                     psr \
                                         --config ${PSR_CONFIG_ARG} \
                                         --step generate-evidence \
@@ -1040,7 +1043,7 @@ def call(Map paramsMap) {
                         if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
                         set -eu -o pipefail
 
-                        source ${HOME}/${WORKFLOW_WORKER_VENV_NAME}/bin/activate
+                        source ${WORKFLOW_WORKER_VENV_PATH}/bin/activate
                         psr \
                             --config ${PSR_CONFIG_ARG} \
                             --step report
