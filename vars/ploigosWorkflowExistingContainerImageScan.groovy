@@ -140,10 +140,6 @@ class WorkflowParams implements Serializable {
      * If not specified then ignored. */
     String trustedCABundleConfigMapName = null
 
-    /* Jenkins Credentials that contains the Username/Password pair for accessing your
-     * registry where the container image is hosted. */
-    String registryCredentialName = ''
-
     /* Registry URL of the container image to scan.
      * i.e. In `quay.io/myorg/mycontainer:mytag` registry URL is `quay.io`. */
     String registryURL = ''
@@ -197,7 +193,7 @@ def call(Map paramsMap) {
 
     /* Name of the virtual environment to set up in the given home worksapce. */
     String WORKFLOW_WORKER_VENV_NAME = 'venv-ploigos'
-	
+
     /* Path to virtual python environment that PSR is in and/or will be installed into, must be on a persistent volume that can be shared between containers */
     String WORKFLOW_WORKER_VENV_PATH = "${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}/${WORKFLOW_WORKER_VENV_NAME}"
 
@@ -270,8 +266,8 @@ def call(Map paramsMap) {
     spec:
         serviceAccount: ${params.workflowServiceAccountName}
         containers:
-        - name: ${WORKFLOW_WORKER_NAME_DEFAULT}
-          image: "${params.workflowWorkerImageDefault}"
+        - name: ${WORKFLOW_WORKER_NAME_AGENT}
+          image: "${params.workflowWorkerImageAgent}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
           tty: true
           volumeMounts:
@@ -281,8 +277,8 @@ def call(Map paramsMap) {
             name: pgp-private-keys
           ${PLATFORM_MOUNTS}
           ${TLS_MOUNTS}
-        - name: ${WORKFLOW_WORKER_NAME_AGENT}
-          image: "${params.workflowWorkerImageAgent}"
+        - name: ${WORKFLOW_WORKER_NAME_DEFAULT}
+          image: "${params.workflowWorkerImageDefault}"
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
           tty: true
           volumeMounts:
@@ -444,41 +440,6 @@ def call(Map paramsMap) {
             } // SETUP
             stage('Continuous Integration') {
                 stages {
-                    stage('CI: Pull Container Image') {
-                        parallel {
-                            stage('CI: Pull Container Image (authed)') {
-                                when { expression { return params.registryCredentialName != null && params.registryCredentialName.trim() != '' }}
-                                steps {
-                                    container("${WORKFLOW_WORKER_NAME_CONTAINER_OPERATIONS}") {
-                                        withCredentials([usernamePassword(credentialsId: "${params.registryCredentialName}", usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
-                                            sh """
-                                                if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
-                                                set -eu -o pipefail
-
-                                                buildah pull --storage-driver=vfs --creds=${REGISTRY_USERNAME}:${REGISTRY_PASSWORD} ${params.registryURL}/${IMAGE_TARGET}
-                                                buildah push --storage-driver=vfs --remove-signatures ${params.registryURL}/${IMAGE_TARGET} docker-archive:/home/ploigos/${params.imageName}.tar
-                                            """
-                                        } //WithCredentials
-                                    }
-                                }
-                            }
-                            stage('CI: Pull Container Image (not authed)') {
-                                when { expression { return params.registryCredentialName == null || params.registryCredentialName.trim() == '' }}
-                                steps {
-                                    container("${WORKFLOW_WORKER_NAME_CONTAINER_OPERATIONS}") {
-                                        sh """
-                                            if [ "${params.verbose}" == "true" ]; then set -x; else set +x; fi
-                                            set -eu -o pipefail
-
-                                            buildah pull --storage-driver=vfs ${params.registryURL}/${IMAGE_TARGET}
-                                            buildah push --storage-driver=vfs --remove-signatures ${params.registryURL}/${IMAGE_TARGET} docker-archive:/home/ploigos/${params.imageName}.tar
-                                        """
-                                    }
-                                }
-                            }
-                        }
-                    }
-
                     stage('CI: Static Image Scan') {
                         parallel {
                             stage('CI: Static Image Scan: Compliance') {
@@ -492,7 +453,9 @@ def call(Map paramsMap) {
                                             psr \
                                                 --config ${PSR_CONFIG_ARG} \
                                                 --step container-image-static-compliance-scan \
-						                        --step-config image-tar-file=/home/ploigos/${params.imageName}.tar
+						                        --step-config \
+                                                    container-image-tag=${params.registryURL}/${IMAGE_TARGET} \
+                                                    container-image-pull-repository-type='docker://'
                                         """
                                     }
                                 }
@@ -508,7 +471,9 @@ def call(Map paramsMap) {
                                             psr \
                                                 --config ${PSR_CONFIG_ARG} \
                                                 --step container-image-static-vulnerability-scan \
-						                        --step-config image-tar-file=/home/ploigos/${params.imageName}.tar
+						                        --step-config \
+                                                    container-image-tag=${params.registryURL}/${IMAGE_TARGET} \
+                                                    container-image-pull-repository-type='docker://'
                                         """
                                     }
                                 }
