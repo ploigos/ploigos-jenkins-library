@@ -423,6 +423,27 @@ def call(Map paramsMap) {
                     }
                 } // parallel
             } // SETUP
+            stage('Approval') { // TODO: move this down
+                when {
+                    expression {
+                        result = false
+                        params.releaseGitRefPatterns.find {
+                            if (BRANCH_NAME ==~ it) {
+                                result = true
+                                return true
+                            } else {
+                                return false
+                            }
+                        }
+                        return result
+                    }
+                }
+                steps {
+                    milestone(ordinal: 1)
+                    input message: "Deploy to PROD?"
+                    milestone(ordinal: 2)
+                }
+            } // Approval Stage
             stage('Continuous Integration') {
                 stages {
                     stage('CI: Generate Metadata') {
@@ -542,27 +563,7 @@ def call(Map paramsMap) {
                     }
                 }
             } // TEST Stage
-            stage('Approval') {
-                when {
-                    expression {
-                        result = false
-                        params.releaseGitRefPatterns.find {
-                            if (BRANCH_NAME ==~ it) {
-                                result = true
-                                return true
-                            } else {
-                                return false
-                            }
-                        }
-                        return result
-                    }
-                }
-                steps {
-                    milestone()
-                    input message: "Deploy to PROD?"
-                    milestone()
-                }
-            } // Approval Stage
+            // TODO
             stage('PROD') {
                 when {
                     expression {
