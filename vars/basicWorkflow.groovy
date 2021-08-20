@@ -121,27 +121,6 @@ class WorkflowParams implements Serializable {
      * when running this pipeline. */
     String workflowWorkersImagePullPolicy = 'IfNotPresent'
 
-    /* Container image to use when creating a workflow worker
-     * to run pipeline steps when no other specific container image has been
-     * specified for that step. */
-    String workflowWorkerImageDefault = "ploigos/ploigos-base:latest"
-
-    /* Container image to use when creating a workflow worker
-     * to run pipeline steps for connecting to CI tool */
-    String workflowWorkerImageAgent = "ploigos/ploigos-ci-agent-jenkins:latest"
-
-    /* Container image to use when creating a workflow worker
-     * to run pipeline steps when performing package application step(s). */
-    String workflowWorkerImagePackage = null
-
-    /* Container image to use when creating a workflow worker
-     * to run pipeline steps when performing container operations (build/push/etc) step(s). */
-    String workflowWorkerImageContainerOperations = "ploigos/ploigos-tool-containers:latest"
-
-    /* Container image to use when creating a workflow worker
-     * to run pipeline steps when performing deploy step(s). */
-    String workflowWorkerImageDeploy = "ploigos/ploigos-tool-argocd:latest"
-
     /* Kubernetes ServiceAccount that the Jenkins Worker Kubernetes Pod should be deployed with.
      *
      * IMPORTANT
@@ -273,7 +252,7 @@ def call(Map paramsMap) {
         serviceAccount: ${params.workflowServiceAccountName}
         containers:
         - name: ${WORKFLOW_WORKER_NAME_DEFAULT}
-          image: "${params.workflowWorkerImageDefault}"
+          image: ploigos/ploigos-base:v0.20.0
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
           tty: true
           volumeMounts:
@@ -284,7 +263,7 @@ def call(Map paramsMap) {
           ${PLATFORM_MOUNTS}
           ${TLS_MOUNTS}
         - name: ${WORKFLOW_WORKER_NAME_AGENT}
-          image: "${params.workflowWorkerImageAgent}"
+          image: ploigos/ploigos-ci-agent-jenkins:v0.20.0
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
           tty: true
           volumeMounts:
@@ -295,7 +274,7 @@ def call(Map paramsMap) {
           ${PLATFORM_MOUNTS}
           ${TLS_MOUNTS}
         - name: ${WORKFLOW_WORKER_NAME_PACKAGE}
-          image: "${params.workflowWorkerImagePackage}"
+          image: ploigos/ploigos-tool-maven:v0.20.0
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
           tty: true
           volumeMounts:
@@ -304,7 +283,7 @@ def call(Map paramsMap) {
           ${PLATFORM_MOUNTS}
           ${TLS_MOUNTS}
         - name: ${WORKFLOW_WORKER_NAME_CONTAINER_OPERATIONS}
-          image: "${params.workflowWorkerImageContainerOperations}"
+          image: ploigos/ploigos-tool-containers:v0.20.0
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
           tty: true
           securityContext:
@@ -318,7 +297,7 @@ def call(Map paramsMap) {
           ${PLATFORM_MOUNTS}
           ${TLS_MOUNTS}
         - name: ${WORKFLOW_WORKER_NAME_DEPLOY}
-          image: "${params.workflowWorkerImageDeploy}"
+          image: ploigos/ploigos-tool-argocd:v0.20.0
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
           tty: true
           volumeMounts:
