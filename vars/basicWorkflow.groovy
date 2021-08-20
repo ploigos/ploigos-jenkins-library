@@ -185,10 +185,10 @@ def call(Map paramsMap) {
 
     /* Name of the virtual environment to set up in the given home worksapce. */
     String WORKFLOW_WORKER_VENV_NAME = 'venv-ploigos'
-    
+
     /* Path to virtual python environment that PSR is in and/or will be installed into, must be on a persistent volume that can be shared between containers */
     String WORKFLOW_WORKER_VENV_PATH = "${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}/${WORKFLOW_WORKER_VENV_NAME}"
-    
+
     /* Directory into which platform configuration is mounted, if applicable */
     String PLATFORM_CONFIG_DIR = "/opt/platform-config"
 
@@ -542,7 +542,27 @@ def call(Map paramsMap) {
                     }
                 }
             } // TEST Stage
-
+            stage('Approval') {
+                when {
+                    expression {
+                        result = false
+                        params.releaseGitRefPatterns.find {
+                            if (BRANCH_NAME ==~ it) {
+                                result = true
+                                return true
+                            } else {
+                                return false
+                            }
+                        }
+                        return result
+                    }
+                }
+                steps {
+                    milestone()
+                    input message: "Deploy to PROD?"
+                    milestone()
+                }
+            } // Approval Stage
             stage('PROD') {
                 when {
                     expression {
