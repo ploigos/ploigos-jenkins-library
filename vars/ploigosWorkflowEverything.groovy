@@ -122,16 +122,16 @@ class WorkflowParams implements Serializable {
     String workflowWorkersImagePullPolicy = 'IfNotPresent'
 
     /* CPU resource request for worker pods created when running this pipeline */
-    String workflowWorkersRequestsCPU = '1'
+    String workflowWorkersRequestsCPU = '.5'
 
     /* Memory resource request for worker pods created when running this pipeline */
-    String workflowWorkersRequestsMemory = '1Gi'
+    String workflowWorkersRequestsMemory = '500Mi'
 
     /* CPU resource limit for worker pods created when running this pipeline */
-    String workflowWorkersLimitsCPU = '2'
+    String workflowWorkersLimitsCPU = '1'
 
     /* Memory resource limit for worker pods created when running this pipeline */
-    String workflowWorkersLimitsMemory = '2Gi'
+    String workflowWorkersLimitsMemory = '1Gi'
 
     /* Container image to use when creating a workflow worker
      * to run pipeline steps when no other specific container image has been
