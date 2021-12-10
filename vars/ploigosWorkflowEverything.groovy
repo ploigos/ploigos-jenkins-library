@@ -329,11 +329,11 @@ def call(Map paramsMap) {
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
           resources:
             limits:
-              cpu: "${params.workflowWorkersRequestsCPU}"
-              memory: "${params.workflowWorkersRequestsMemory}"
-            requests:
               cpu: "${params.workflowWorkersLimitsCPU}"
               memory: "${params.workflowWorkersLimitsMemory}"
+            requests:
+              cpu: "${params.workflowWorkersRequestsCPU}"
+              memory: "${params.workflowWorkersRequestsMemory}"
           tty: true
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
@@ -347,11 +347,11 @@ def call(Map paramsMap) {
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
           resources:
             limits:
-              cpu: "${params.workflowWorkersRequestsCPU}"
-              memory: "${params.workflowWorkersRequestsMemory}"
-            requests:
               cpu: "${params.workflowWorkersLimitsCPU}"
               memory: "${params.workflowWorkersLimitsMemory}"
+            requests:
+              cpu: "${params.workflowWorkersRequestsCPU}"
+              memory: "${params.workflowWorkersRequestsMemory}"
           tty: true
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
@@ -365,11 +365,11 @@ def call(Map paramsMap) {
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
           resources:
             limits:
-              cpu: "${params.workflowWorkersRequestsCPU}"
-              memory: "${params.workflowWorkersRequestsMemory}"
-            requests:
               cpu: "${params.workflowWorkersLimitsCPU}"
               memory: "${params.workflowWorkersLimitsMemory}"
+            requests:
+              cpu: "${params.workflowWorkersRequestsCPU}"
+              memory: "${params.workflowWorkersRequestsMemory}"
           tty: true
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
@@ -381,11 +381,11 @@ def call(Map paramsMap) {
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
           resources:
             limits:
-              cpu: "${params.workflowWorkersRequestsCPU}"
-              memory: "${params.workflowWorkersRequestsMemory}"
-            requests:
               cpu: "${params.workflowWorkersLimitsCPU}"
               memory: "${params.workflowWorkersLimitsMemory}"
+            requests:
+              cpu: "${params.workflowWorkersRequestsCPU}"
+              memory: "${params.workflowWorkersRequestsMemory}"
           tty: true
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
@@ -397,11 +397,11 @@ def call(Map paramsMap) {
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
           resources:
             limits:
-              cpu: "${params.workflowWorkersRequestsCPU}"
-              memory: "${params.workflowWorkersRequestsMemory}"
-            requests:
               cpu: "${params.workflowWorkersLimitsCPU}"
               memory: "${params.workflowWorkersLimitsMemory}"
+            requests:
+              cpu: "${params.workflowWorkersRequestsCPU}"
+              memory: "${params.workflowWorkersRequestsMemory}"
           tty: true
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
@@ -413,11 +413,11 @@ def call(Map paramsMap) {
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
           resources:
             limits:
-              cpu: "${params.workflowWorkersRequestsCPU}"
-              memory: "${params.workflowWorkersRequestsMemory}"
-            requests:
               cpu: "${params.workflowWorkersLimitsCPU}"
               memory: "${params.workflowWorkersLimitsMemory}"
+            requests:
+              cpu: "${params.workflowWorkersRequestsCPU}"
+              memory: "${params.workflowWorkersRequestsMemory}"
           tty: true
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
@@ -429,11 +429,11 @@ def call(Map paramsMap) {
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
           resources:
             limits:
-              cpu: "${params.workflowWorkersRequestsCPU}"
-              memory: "${params.workflowWorkersRequestsMemory}"
-            requests:
               cpu: "${params.workflowWorkersLimitsCPU}"
               memory: "${params.workflowWorkersLimitsMemory}"
+            requests:
+              cpu: "${params.workflowWorkersRequestsCPU}"
+              memory: "${params.workflowWorkersRequestsMemory}"
           tty: true
           securityContext:
             capabilities:
@@ -450,11 +450,11 @@ def call(Map paramsMap) {
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
           resources:
             limits:
-              cpu: "${params.workflowWorkersRequestsCPU}"
-              memory: "${params.workflowWorkersRequestsMemory}"
-            requests:
               cpu: "${params.workflowWorkersLimitsCPU}"
               memory: "${params.workflowWorkersLimitsMemory}"
+            requests:
+              cpu: "${params.workflowWorkersRequestsCPU}"
+              memory: "${params.workflowWorkersRequestsMemory}"
           tty: true
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
@@ -466,11 +466,11 @@ def call(Map paramsMap) {
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
           resources:
             limits:
-              cpu: "${params.workflowWorkersRequestsCPU}"
-              memory: "${params.workflowWorkersRequestsMemory}"
-            requests:
               cpu: "${params.workflowWorkersLimitsCPU}"
               memory: "${params.workflowWorkersLimitsMemory}"
+            requests:
+              cpu: "${params.workflowWorkersRequestsCPU}"
+              memory: "${params.workflowWorkersRequestsMemory}"
           tty: true
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
@@ -482,11 +482,11 @@ def call(Map paramsMap) {
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
           resources:
             limits:
-              cpu: "${params.workflowWorkersRequestsCPU}"
-              memory: "${params.workflowWorkersRequestsMemory}"
-            requests:
               cpu: "${params.workflowWorkersLimitsCPU}"
               memory: "${params.workflowWorkersLimitsMemory}"
+            requests:
+              cpu: "${params.workflowWorkersRequestsCPU}"
+              memory: "${params.workflowWorkersRequestsMemory}"
           tty: true
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
@@ -498,11 +498,11 @@ def call(Map paramsMap) {
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
           resources:
             limits:
-              cpu: "${params.workflowWorkersRequestsCPU}"
-              memory: "${params.workflowWorkersRequestsMemory}"
-            requests:
               cpu: "${params.workflowWorkersLimitsCPU}"
               memory: "${params.workflowWorkersLimitsMemory}"
+            requests:
+              cpu: "${params.workflowWorkersRequestsCPU}"
+              memory: "${params.workflowWorkersRequestsMemory}"
           tty: true
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
@@ -514,11 +514,11 @@ def call(Map paramsMap) {
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
           resources:
             limits:
-              cpu: "${params.workflowWorkersRequestsCPU}"
-              memory: "${params.workflowWorkersRequestsMemory}"
-            requests:
               cpu: "${params.workflowWorkersLimitsCPU}"
               memory: "${params.workflowWorkersLimitsMemory}"
+            requests:
+              cpu: "${params.workflowWorkersRequestsCPU}"
+              memory: "${params.workflowWorkersRequestsMemory}"
           tty: true
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
@@ -530,11 +530,11 @@ def call(Map paramsMap) {
           imagePullPolicy: "${params.workflowWorkersImagePullPolicy}"
           resources:
             limits:
-              cpu: "${params.workflowWorkersRequestsCPU}"
-              memory: "${params.workflowWorkersRequestsMemory}"
-            requests:
               cpu: "${params.workflowWorkersLimitsCPU}"
               memory: "${params.workflowWorkersLimitsMemory}"
+            requests:
+              cpu: "${params.workflowWorkersRequestsCPU}"
+              memory: "${params.workflowWorkersRequestsMemory}"
           tty: true
           volumeMounts:
           - mountPath: ${WORKFLOW_WORKER_WORKSPACE_HOME_PATH}
