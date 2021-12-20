@@ -269,7 +269,7 @@ def call(Map paramsMap) {
     /* Directory into which platform configuration is mounted, if applicable */
     String PLATFORM_CONFIG_DIR = "/opt/platform-config"
 
-    /* Additional mounts for agent containers, if separatePlatformConfig == true */
+    /* Additional mounts for agent containers, if platformConfigConfigMapName is defined */
     String PLATFORM_MOUNTS = params.platformConfigConfigMapName ? """
           - mountPath: ${PLATFORM_CONFIG_DIR}/config.yml
             name: ploigos-platform-config
@@ -279,7 +279,7 @@ def call(Map paramsMap) {
             subPath: config-secrets.yml
     """ : ""
 
-    /* Additional volumes for the agent Pod, if separatePlatformConfig == true */
+    /* Additional volumes for the agent Pod, if platformConfigConfigMapName is defined */
     String PLATFORM_VOLUMES = params.platformConfigConfigMapName ? """
         - name: ploigos-platform-config
           configMap:
@@ -306,8 +306,8 @@ def call(Map paramsMap) {
             name: ${params.trustedCABundleConfigMapName}
     """ : ""
 
-    /* Combine this app's local config with platform-level config, if separatePlatformConfig == true */
-    String PSR_CONFIG_ARG = params.separatePlatformConfig ?
+    /* Combine this app's local config with platform-level config, if platformConfigConfigMapName is defined */
+    String PSR_CONFIG_ARG = params.platformConfigConfigMapName ?
         "${PLATFORM_CONFIG_DIR} ${params.stepRunnerConfigDir}" : "${params.stepRunnerConfigDir}"
 
     pipeline {
