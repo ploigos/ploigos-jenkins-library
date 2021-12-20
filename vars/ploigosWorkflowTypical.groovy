@@ -189,12 +189,31 @@ class WorkflowParams implements Serializable {
      */
     String workflowServiceAccountName = 'jenkins'
 
-    /* Flag indicating that platform-level configuration is separated from
-     * app-level configuration, instead provided by way of the following Kubernetes
-     * objects, which are mounted into the agent Pod:
-     *  - A ConfigMap named ploigos-platform-config
-     *  - A Secret named ploigos-platform-config-secrets */
-    boolean separatePlatformConfig = false
+    /* Kubernetes ConfigMap name containing shared Ploigos configuration file(s).
+     *
+     * Typically this would be provided by an infrastrcture or release engineering team so
+     * that development teams dont have to have duplicate configuration that can be provided
+     * and shared among multiple teams/projects.
+     *
+     * EX: the uri for container image repoistory would be a good thing
+     *     to put in shared config.
+     */
+    String platformConfigConfigMapName = null
+
+    /* Kubernetes Secret name containing shared Ploigos configuration file(s).
+     *
+     * IMPORTANT: Since Kubernetes Secrets are not encrypted it is highly recomended that
+     *            the contents of this Secret be encrypted with SOPS or similar.
+     *
+     * Typically this would be provided by an infrastrcture or release engineering team so
+     * that development teams dont have to have duplicate configuration that can be provided
+     * and shared among multiple teams/projects.
+     *
+     * EX: the usernmae and password for container image repoistory would be a good thing
+     *     to put in shared secret config, assuming crednetials shared with more then one
+     *     team/project.
+     */
+    String platformConfigSecretName = null
 
     /* Name of the ConfigMap to mount as a trusted CA Bundle.
      * Useful for when interacting with external services signed by an internal CA.
@@ -251,7 +270,7 @@ def call(Map paramsMap) {
     String PLATFORM_CONFIG_DIR = "/opt/platform-config"
 
     /* Additional mounts for agent containers, if separatePlatformConfig == true */
-    String PLATFORM_MOUNTS = params.separatePlatformConfig ? """
+    String PLATFORM_MOUNTS = params.platformConfigConfigMapName ? """
           - mountPath: ${PLATFORM_CONFIG_DIR}/config.yml
             name: ploigos-platform-config
             subPath: config.yml
@@ -261,13 +280,13 @@ def call(Map paramsMap) {
     """ : ""
 
     /* Additional volumes for the agent Pod, if separatePlatformConfig == true */
-    String PLATFORM_VOLUMES = params.separatePlatformConfig ? """
+    String PLATFORM_VOLUMES = params.platformConfigConfigMapName ? """
         - name: ploigos-platform-config
           configMap:
-            name: ploigos-platform-config
+            name: ${params.platformConfigConfigMapName}
         - name: ploigos-platform-config-secrets
           secret:
-            secretName: ploigos-platform-config-secrets
+            secretName: ${params.platformConfigSecretName}
     """ : ""
 
     /* determine if trusted CA bundle config map is specified. */
