@@ -131,7 +131,7 @@ class WorkflowParams implements Serializable {
     String workflowWorkersLimitsCPU = '1'
 
     /* Memory resource limit for worker pods created when running this pipeline */
-    String workflowWorkersLimitsMemory = '1Gi'
+    String workflowWorkersLimitsMemory = '2Gi'
 
      /* Container image to use when creating a workflow worker
      * to run pipeline steps when no other specific container image has been
